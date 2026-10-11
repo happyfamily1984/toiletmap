@@ -8,6 +8,9 @@ val webUrl: String = (findProperty("toiletmap.webUrl") as String?)
     ?.takeIf { it.isNotBlank() }
     ?: "https://toiletmap.example.com/"
 
+// CI 에서 -Ptoiletmap.versionCode=<빌드번호> 로 올려서 새 APK 가 업데이트로 인식되게 함
+val appVersionCode: Int = (findProperty("toiletmap.versionCode") as String?)?.toIntOrNull() ?: 1
+
 android {
     namespace = "com.salddeul.toiletmap"
     compileSdk = 35
@@ -16,8 +19,8 @@ android {
         applicationId = "com.salddeul.toiletmap"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = appVersionCode
+        versionName = "1.0.$appVersionCode"
         buildConfigField("String", "WEB_URL", "\"$webUrl\"")
     }
 

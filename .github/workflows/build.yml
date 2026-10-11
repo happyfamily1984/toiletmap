@@ -29,6 +29,8 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: android
@@ -46,11 +48,24 @@ jobs:
         run: |
           chmod +x gradlew
           if [ -n "$WEB_URL" ]; then
-            ./gradlew assembleRelease "-Ptoiletmap.webUrl=$WEB_URL"
+            ./gradlew assembleRelease "-Ptoiletmap.webUrl=$WEB_URL" "-Ptoiletmap.versionCode=${{ github.run_number }}"
           else
-            ./gradlew assembleRelease
+            ./gradlew assembleRelease "-Ptoiletmap.versionCode=${{ github.run_number }}"
           fi
+          cp app/build/outputs/apk/release/app-release.apk salddeul-toiletmap.apk
       - uses: actions/upload-artifact@v4
         with:
           name: salddeul-toiletmap-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          path: android/salddeul-toiletmap.apk
+      - name: Publish APK release (main only)
+        # 멤버 배포용 고정 링크:
+        # https://github.com/<owner>/<repo>/releases/latest/download/salddeul-toiletmap.apk
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.WEB_URL != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" salddeul-toiletmap.apk \
+            --repo "${{ github.repository }}" \
+            --title "살뜰 화장실맵 v1.0.${{ github.run_number }}" \
+            --notes "안드로이드 앱 (서버 주소: ${{ vars.WEB_URL }})" \
+            --latest

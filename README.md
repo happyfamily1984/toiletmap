@@ -96,6 +96,13 @@ docker run -d -p 3000:3000 \
 toiletmap.webUrl=https://내-서버-주소/
 ```
 
+### 멤버 배포용 다운로드 링크
+
+main 브랜치가 바뀌면(그리고 `WEB_URL` 변수가 있으면) APK 가 Releases 에 자동으로 올라갑니다.
+항상 최신 APK 를 받는 고정 링크:
+
+https://github.com/happyfamily1984/toiletmap/releases/latest/download/salddeul-toiletmap.apk
+
 ### APK 받기 (GitHub Actions, 추천)
 1. GitHub 저장소 **Settings → Secrets and variables → Actions → Variables** 에 `WEB_URL` 을 추가합니다. (예: `https://내-서버-주소/`)
 2. 코드를 push 하거나 **Actions → Build → Run workflow** 를 실행합니다.

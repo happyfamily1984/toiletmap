@@ -76,19 +76,11 @@ input, textarea { font: inherit; }
 .topbar {
   position: absolute; left: 0; right: 0; top: 0;
   padding: calc(10px + var(--safe-top)) 12px 0;
-  display: flex; gap: 8px; z-index: 10; pointer-events: none;
+  display: flex; justify-content: flex-end; gap: 8px; z-index: 10; pointer-events: none;
 }
 .topbar > * { pointer-events: auto; }
-.search {
-  flex: 1; display: flex; background: var(--surface);
-  border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; min-width: 0;
-}
-.search input {
-  flex: 1; min-width: 0; border: 0; outline: 0; padding: 12px 14px; background: transparent;
-}
-.search button { border: 0; background: transparent; padding: 0 14px; }
 .icon-btn {
-  width: 46px; border: 0; border-radius: 12px; background: var(--surface);
+  width: 46px; height: 46px; border: 0; border-radius: 12px; background: var(--surface);
   box-shadow: var(--shadow); font-size: 20px;
 }
 .menu {

@@ -306,17 +306,6 @@
     });
   }
 
-  function geocode(query) {
-    return new Promise(function (resolve) {
-      if (!hasGeocoder()) return resolve([]);
-      var S = naver.maps.Service;
-      S.geocode({ query: query }, function (status, response) {
-        if (status !== S.Status.OK || !response || !response.v2) return resolve([]);
-        resolve(response.v2.addresses || []);
-      });
-    });
-  }
-
   function isServiceArea(area2) {
     return /^(과천시|안양시|의왕시)/.test(area2 || '');
   }
@@ -366,33 +355,6 @@
       }
       showForm({ lat: lat, lng: lng, address: info ? info.address : '' });
     });
-  }
-
-  function onSearch(e) {
-    e.preventDefault();
-    var q = $('search-input').value.trim();
-    if (!q) return;
-    $('search-input').blur();
-
-    var queries = /과천|안양|의왕/.test(q) ? [q] : [q, '과천시 ' + q, '안양시 ' + q, '의왕시 ' + q];
-    var tryNext = function (i) {
-      if (i >= queries.length) {
-        toast('과천·안양·의왕에서 주소를 찾지 못했어요');
-        return;
-      }
-      geocode(queries[i]).then(function (list) {
-        var hit = null;
-        for (var k = 0; k < list.length; k++) {
-          var lat = parseFloat(list[k].y);
-          var lng = parseFloat(list[k].x);
-          if (inBounds(lat, lng)) { hit = { lat: lat, lng: lng, item: list[k] }; break; }
-        }
-        if (!hit) return tryNext(i + 1);
-        state.map.morph(new naver.maps.LatLng(hit.lat, hit.lng), 17);
-        toast(hit.item.roadAddress || hit.item.jibunAddress || q);
-      });
-    };
-    tryNext(0);
   }
 
   // ---------------- 바텀시트 ----------------
@@ -552,7 +514,6 @@
   };
 
   function setupMainUi() {
-    $('search-form').addEventListener('submit', onSearch);
     $('locate-btn').addEventListener('click', locate);
     $('add-btn').addEventListener('click', function () {
       if (state.map) setAddMode(!state.addMode);

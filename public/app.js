@@ -228,11 +228,22 @@
     }
   }
 
+  // 별 5개: 금색 + 왕관 + 반짝이, 별 4개: 금색
+  function tierClass(t) {
+    var r = ratingOf(t);
+    return r === 5 ? ' tier5' : r === 4 ? ' tier4' : '';
+  }
+
+  var SPARKLES = '<span class="sparkle s1">✦</span><span class="sparkle s2">✦</span><span class="sparkle s3">✦</span>';
+
   function markerIcon(t) {
     var nm = naver.maps;
     var html;
+    var tier = tierClass(t);
+    var five = ratingOf(t) === 5;
     if (state.labelMode) {
-      html = '<div class="label-marker">' +
+      html = '<div class="label-marker' + tier + '">' +
+        (five ? '<span class="crown">👑</span>' + SPARKLES : '') +
         '<div class="label-name">' + escapeHtml(t.name) + '</div>' +
         '<div class="label-stars">' + starsText(ratingOf(t)) + '</div>' +
         (t.password
@@ -240,7 +251,9 @@
           : '<div class="label-pw none">비밀번호 없음</div>') +
         '</div>';
     } else {
-      html = '<div class="pin"><div class="pin-shape"><span>WC</span></div></div>';
+      html = '<div class="pin' + tier + '">' +
+        (five ? '<span class="crown">👑</span>' + SPARKLES : '') +
+        '<div class="pin-shape"><span>WC</span></div></div>';
     }
     return { content: html, anchor: new nm.Point(0, 0) };
   }

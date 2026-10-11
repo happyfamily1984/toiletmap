@@ -69,20 +69,18 @@ function validateToilet(input, { partial = false } = {}) {
 }
 
 /**
- * 아주 단순한 JSON 파일 저장소.
+ * 아주 단순한 JSON 파일 저장소 (DATABASE_URL 이 없을 때, 로컬 실행용).
  * 동기 쓰기 + 임시파일 rename 으로 파일이 깨지지 않게 한다.
  */
-class ToiletStore {
+class FileStore {
   constructor(file) {
     this.file = file;
     this.items = [];
-    this.load();
   }
 
-  load() {
+  async init() {
     try {
-      const raw = fs.readFileSync(this.file, 'utf8');
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8'));
       this.items = Array.isArray(parsed.toilets) ? parsed.toilets : [];
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
@@ -97,15 +95,11 @@ class ToiletStore {
     fs.renameSync(tmp, this.file);
   }
 
-  list() {
+  async list() {
     return this.items;
   }
 
-  get(id) {
-    return this.items.find((t) => t.id === id) || null;
-  }
-
-  create(data) {
+  async create(data) {
     const now = new Date().toISOString();
     const item = { id: crypto.randomUUID(), ...data, createdAt: now, updatedAt: now };
     this.items.push(item);
@@ -113,15 +107,15 @@ class ToiletStore {
     return item;
   }
 
-  update(id, data) {
-    const item = this.get(id);
+  async update(id, data) {
+    const item = this.items.find((t) => t.id === id);
     if (!item) return null;
     Object.assign(item, data, { updatedAt: new Date().toISOString() });
     this.save();
     return item;
   }
 
-  remove(id) {
+  async remove(id) {
     const before = this.items.length;
     this.items = this.items.filter((t) => t.id !== id);
     if (this.items.length === before) return false;
@@ -130,4 +124,89 @@ class ToiletStore {
   }
 }
 
-module.exports = { ToiletStore, validateToilet, inRegion, REGION_BOUNDS };
+/**
+ * PostgreSQL 저장소 (Neon 무료 DB 등). DATABASE_URL 이 있으면 사용한다.
+ * 서버가 재시작/재배포돼도 데이터가 남는다.
+ */
+const PG_COLUMNS = ['name', 'address', 'description', 'password', 'lat', 'lng'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function fromRow(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    description: r.description,
+    password: r.password,
+    lat: r.lat,
+    lng: r.lng,
+    createdAt: r.created_at.toISOString(),
+    updatedAt: r.updated_at.toISOString(),
+  };
+}
+
+class PgStore {
+  constructor(connectionString) {
+    const { Pool } = require('pg');
+    this.pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 30000 });
+    // Neon 무료 DB는 쉬는 동안 연결을 끊는다. 끊긴 연결 오류로 서버가 죽지 않게 한다.
+    this.pool.on('error', (err) => console.error('DB 연결 오류:', err.message));
+  }
+
+  async init() {
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS toilets (
+        id uuid PRIMARY KEY,
+        name text NOT NULL,
+        address text NOT NULL DEFAULT '',
+        description text NOT NULL DEFAULT '',
+        password text NOT NULL DEFAULT '',
+        lat double precision NOT NULL,
+        lng double precision NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      )`);
+  }
+
+  async list() {
+    const { rows } = await this.pool.query('SELECT * FROM toilets ORDER BY created_at');
+    return rows.map(fromRow);
+  }
+
+  async create(data) {
+    const { rows } = await this.pool.query(
+      `INSERT INTO toilets (id, name, address, description, password, lat, lng)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [crypto.randomUUID(), data.name, data.address, data.description, data.password, data.lat, data.lng]
+    );
+    return fromRow(rows[0]);
+  }
+
+  async update(id, data) {
+    if (!UUID_RE.test(id)) return null;
+    const keys = PG_COLUMNS.filter((k) => data[k] !== undefined);
+    const sets = keys.map((k, i) => `${k} = $${i + 2}`);
+    sets.push('updated_at = now()');
+    const { rows } = await this.pool.query(
+      `UPDATE toilets SET ${sets.join(', ')} WHERE id = $1 RETURNING *`,
+      [id, ...keys.map((k) => data[k])]
+    );
+    return rows[0] ? fromRow(rows[0]) : null;
+  }
+
+  async remove(id) {
+    if (!UUID_RE.test(id)) return false;
+    const { rowCount } = await this.pool.query('DELETE FROM toilets WHERE id = $1', [id]);
+    return rowCount > 0;
+  }
+
+  async close() {
+    await this.pool.end();
+  }
+}
+
+function createStore({ databaseUrl, dataFile }) {
+  return databaseUrl ? new PgStore(databaseUrl) : new FileStore(dataFile);
+}
+
+module.exports = { createStore, validateToilet, inRegion, REGION_BOUNDS };

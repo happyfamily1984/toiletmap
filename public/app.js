@@ -537,10 +537,33 @@
     });
   }
 
+  // 카카오 애드핏 배너 (서버에 ADFIT_AD_UNIT 이 설정된 경우만)
+  var adShown = false;
+  function showAd() {
+    var unit = state.config.adfitUnit;
+    if (!unit || adShown) return;
+    adShown = true;
+    var bar = $('ad-bar');
+    var ins = document.createElement('ins');
+    ins.className = 'kakao_ad_area';
+    ins.style.display = 'none';
+    ins.setAttribute('data-ad-unit', unit);
+    ins.setAttribute('data-ad-width', '320');
+    ins.setAttribute('data-ad-height', '50');
+    bar.appendChild(ins);
+    var sc = document.createElement('script');
+    sc.async = true;
+    sc.src = 'https://t1.daumcdn.net/kas/static/ba.min.js';
+    bar.appendChild(sc);
+    bar.hidden = false;
+    $('main').classList.add('has-ad');
+  }
+
   var mapReady = null;
   function showMain() {
     $('login').hidden = true;
     $('main').hidden = false;
+    showAd();
     if (!mapReady) {
       mapReady = loadNaverMaps(state.config.naverClientId).then(initMap);
     }

@@ -20,7 +20,7 @@
 ## 구성
 
 ```
-server/      Node.js(Express) 서버: 접속 코드 인증, 화장실 데이터 API, JSON 파일 저장
+server/      Node.js(Express) 서버: 접속 코드 인증, 화장실 데이터 API, PostgreSQL(또는 JSON 파일) 저장
 public/      모바일 웹페이지 (네이버 지도 JS API v3)
 android/     웹페이지를 여는 안드로이드 앱 (WebView)
 ```
@@ -39,30 +39,50 @@ Node.js 18 이상이 필요합니다.
 ```bash
 npm install
 NAVER_MAP_CLIENT_ID=발급받은ClientID SESSION_SECRET=아무_긴_문자열 npm start
-# → http://localhost:3000
+# → http://localhost:3000  (DATABASE_URL 이 없으면 data/toilets.json 에 저장)
 ```
 
 | 환경변수 | 설명 |
 | --- | --- |
 | `NAVER_MAP_CLIENT_ID` | 네이버 지도 Client ID (필수) |
+| `DATABASE_URL` | PostgreSQL 접속 주소 (Neon 등). 없으면 `data/toilets.json` 파일에 저장 |
 | `ACCESS_CODE` | 4자리 접속 코드 (기본 `6511`). 바꾸면 기존 로그인은 모두 풀립니다 |
 | `SESSION_SECRET` | 로그인 쿠키 서명용 비밀 문자열 (권장) |
+| `ADFIT_AD_UNIT` | 카카오 애드핏 광고 단위 ID (`DAN-...`). 넣으면 지도 아래에 배너가 나옵니다 |
 | `PORT` | 포트 (기본 3000) |
-| `DATA_FILE` | 데이터 파일 경로 (기본 `data/toilets.json`) |
 
-### 배포 (Docker)
+### 무료 배포 (Render 무료 + Neon 무료 DB)
+
+1. **Neon 데이터베이스 만들기** — https://console.neon.tech
+   - 가입 후 새 프로젝트 생성 (Region: **AWS Asia Pacific (Singapore)** 추천)
+   - **Connect** 버튼 → 접속 주소(`postgresql://...?sslmode=require`)를 복사 → 이게 `DATABASE_URL`
+   - 표(테이블)는 서버가 처음 켜질 때 자동으로 만듭니다.
+2. **Render 웹 서비스 만들기** — https://dashboard.render.com/web/new
+   - GitHub 저장소 `toiletmap` 연결, Branch 선택
+   - Language: **Docker**, Region: **Singapore**, Instance Type: **Free**
+   - Environment Variables: `NAVER_MAP_CLIENT_ID`, `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV=production`
+   - **Deploy** → `https://xxxx.onrender.com` 주소 생성
+3. 네이버 클라우드 Maps Application 의 **Web 서비스 URL** 에 위 주소 등록
+
+> 무료 Render 는 15분간 접속이 없으면 잠들어서, 그 뒤 첫 접속은 30초~1분 걸립니다.
+> 데이터는 Neon DB 에 있으므로 잠들거나 재배포돼도 지워지지 않습니다.
+
+### 직접 서버에서 실행 (Docker)
 
 ```bash
 docker build -t toiletmap .
-docker run -d -p 3000:3000 -v toiletmap-data:/app/data \
-  -e NAVER_MAP_CLIENT_ID=... -e SESSION_SECRET=... toiletmap
+docker run -d -p 3000:3000 \
+  -e NAVER_MAP_CLIENT_ID=... -e SESSION_SECRET=... -e DATABASE_URL=... toiletmap
 ```
 
-Render, Railway, Fly.io 같은 서비스에 올려도 됩니다. 다만 아래 사항을 지켜 주세요.
+- 반드시 **HTTPS** 주소로 배포해야 내 위치 기능과 안드로이드 앱이 동작합니다.
 
-- 반드시 **HTTPS** 주소로 배포해야 합니다. 그래야 내 위치 기능이 동작하고 안드로이드 앱에서 열립니다.
-- 데이터 파일(`/app/data`)은 **영구 디스크/볼륨**에 저장되게 해야 재배포해도 데이터가 남습니다.
-- 배포한 주소를 네이버 클라우드의 **Web 서비스 URL**에 등록해야 합니다.
+## 광고 배너 (카카오 애드핏)
+
+1. https://adfit.kakao.com 가입 → **매체 등록** (웹, 사이트 주소 입력) → 심사
+2. 승인되면 **광고 단위 추가** → 배너 **320x50** 선택 → `DAN-` 으로 시작하는 광고 단위 ID 복사
+3. Render 환경변수에 `ADFIT_AD_UNIT=DAN-xxxxxxxx` 추가 → 지도 아래에 배너가 표시됩니다.
+4. 수익은 애드핏 대시보드에서 확인하고, 정산 정보(계좌, 신분증)를 등록하면 지급됩니다.
 
 ## 3. 안드로이드 앱 (웹페이지 바로가기 앱)
 
@@ -99,4 +119,5 @@ cd android
 
 ```bash
 npm test
+# PostgreSQL 저장소까지 테스트: TEST_DATABASE_URL=postgres://... npm test
 ```

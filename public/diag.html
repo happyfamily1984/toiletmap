@@ -82,6 +82,10 @@
             log('bad', '지도 생성 오류: ' + err.message);
           }
 
+          var geoStarted = false;
+          function testGeocoder() {
+          if (geoStarted) return;
+          geoStarted = true;
           var S = naver.maps.Service;
           if (!S || !S.reverseGeocode) {
             log('bad', 'geocoder 모듈 없음');
@@ -97,6 +101,13 @@
                 g.textContent = '❌ 주소 변환 실패 (status ' + status + ') → Geocoding / Reverse Geocoding 체크 확인';
               }
             });
+          }
+          }
+          // geocoder 서브모듈은 maps.js 뒤에 따로 불러와진다
+          if (naver.maps.Service && naver.maps.Service.reverseGeocode) testGeocoder();
+          else {
+            naver.maps.onJSContentLoaded = testGeocoder;
+            setTimeout(testGeocoder, 5000);
           }
 
           setTimeout(function () {

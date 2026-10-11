@@ -139,7 +139,12 @@
       var s = document.createElement('script');
       s.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=' +
         encodeURIComponent(clientId) + '&submodules=geocoder';
-      s.onload = function () { resolve(); };
+      s.onload = function () {
+        // geocoder 서브모듈은 maps.js 뒤에 따로 불러와지므로 준비될 때까지 기다린다
+        if (naver.maps.Service && naver.maps.Service.geocode) return resolve();
+        naver.maps.onJSContentLoaded = resolve;
+        setTimeout(resolve, 5000);
+      };
       s.onerror = function () { reject(new Error('네이버 지도를 불러오지 못했습니다.')); };
       document.head.appendChild(s);
     });
@@ -169,6 +174,10 @@
       onMapClick(e.coord);
     });
     nm.Event.addListener(state.map, 'zoom_changed', updateLabelMode);
+    window.addEventListener('resize', function () {
+      var el = $('map');
+      state.map.setSize(new nm.Size(el.offsetWidth, el.offsetHeight));
+    });
     updateLabelMode();
 
     setTimeout(function () { $('hint').classList.add('fade'); }, 5000);

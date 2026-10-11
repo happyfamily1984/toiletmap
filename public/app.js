@@ -20,6 +20,9 @@
     markers: {},
     tempMarker: null,
     myMarker: null,
+    zone: null,        // 살뜰 권역 데이터 (zone.json)
+    zoneShapes: [],    // 지도에 그린 권역 폴리곤 + 동 이름 라벨
+    zoneOn: false,
     labelMode: false,
     addMode: false,
   };
@@ -513,8 +516,84 @@
     return false;
   };
 
+  // ---------------- 살뜰 권역 ----------------
+  var ZONE_KEY = 'toiletmap.zoneOn';
+
+  function loadZone() {
+    if (state.zone) return Promise.resolve(state.zone);
+    return fetch('/zone.json').then(function (r) { return r.json(); }).then(function (z) {
+      state.zone = z;
+      return z;
+    });
+  }
+
+  function drawZone(z) {
+    var nm = naver.maps;
+    z.areas.forEach(function (area) {
+      area.polygons.forEach(function (ring) {
+        var path = ring.map(function (p) { return new nm.LatLng(p[0], p[1]); });
+        state.zoneShapes.push(new nm.Polygon({
+          map: state.map,
+          paths: [path],
+          fillColor: '#ff5fa2',
+          fillOpacity: 0.18,
+          strokeColor: '#ff3d8b',
+          strokeOpacity: 0.7,
+          strokeWeight: 2,
+          clickable: false, // 등록 모드에서 지도 클릭이 그대로 통하도록
+          zIndex: 1,
+        }));
+        // 동 이름 라벨 (꼭짓점 평균 위치)
+        var lat = 0, lng = 0;
+        ring.forEach(function (p) { lat += p[0]; lng += p[1]; });
+        state.zoneShapes.push(new nm.Marker({
+          map: state.map,
+          position: new nm.LatLng(lat / ring.length, lng / ring.length),
+          clickable: false,
+          zIndex: 2,
+          icon: { content: '<div class="zone-label">' + escapeHtml(area.name) + '</div>', anchor: new nm.Point(0, 0) },
+        }));
+      });
+    });
+  }
+
+  function zoneBounds(z) {
+    var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+    z.areas.forEach(function (a) {
+      a.polygons.forEach(function (ring) {
+        ring.forEach(function (p) {
+          minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]);
+          minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]);
+        });
+      });
+    });
+    return new naver.maps.LatLngBounds(
+      new naver.maps.LatLng(minLat, minLng),
+      new naver.maps.LatLng(maxLat, maxLng)
+    );
+  }
+
+  function setZone(on, fit) {
+    state.zoneOn = on;
+    $('zone-btn').classList.toggle('active', on);
+    try { localStorage.setItem(ZONE_KEY, on ? '1' : '0'); } catch (e) { /* 저장 안 돼도 무관 */ }
+    if (!on) {
+      state.zoneShapes.forEach(function (s) { s.setMap(null); });
+      state.zoneShapes = [];
+      return;
+    }
+    loadZone().then(function (z) {
+      if (!state.zoneOn || state.zoneShapes.length) return;
+      drawZone(z);
+      if (fit) state.map.fitBounds(zoneBounds(z), { top: 70, right: 20, bottom: 90, left: 20 });
+    }).catch(function () { toast('권역 정보를 불러오지 못했어요'); });
+  }
+
   function setupMainUi() {
     $('locate-btn').addEventListener('click', locate);
+    $('zone-btn').addEventListener('click', function () {
+      if (state.map) setZone(!state.zoneOn, true);
+    });
     $('add-btn').addEventListener('click', function () {
       if (state.map) setAddMode(!state.addMode);
     });
@@ -568,7 +647,11 @@
     $('main').hidden = false;
     showAd();
     if (!mapReady) {
-      mapReady = loadNaverMaps(state.config.naverClientId).then(initMap);
+      mapReady = loadNaverMaps(state.config.naverClientId).then(initMap).then(function () {
+        var saved = null;
+        try { saved = localStorage.getItem(ZONE_KEY); } catch (e) { /* 무시 */ }
+        if (saved === '1') setZone(true, false);
+      });
     }
     mapReady
       .then(loadToilets)

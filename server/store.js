@@ -4,9 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// 과천시 + 안양시를 넉넉히 감싸는 영역 (위도/경도)
+// 과천시 + 안양시 + 의왕시를 넉넉히 감싸는 영역 (위도/경도)
 const REGION_BOUNDS = {
-  minLat: 37.35,
+  minLat: 37.28,
   maxLat: 37.48,
   minLng: 126.86,
   maxLng: 127.05,
@@ -62,7 +62,7 @@ function validateToilet(input, { partial = false } = {}) {
       return { error: '위치 정보가 올바르지 않습니다.' };
     }
     if (!inRegion(lat, lng)) {
-      return { error: '과천·안양 지역만 등록할 수 있습니다.' };
+      return { error: '과천·안양·의왕 지역만 등록할 수 있습니다.' };
     }
     out.lat = Math.round(lat * 1e7) / 1e7;
     out.lng = Math.round(lng * 1e7) / 1e7;

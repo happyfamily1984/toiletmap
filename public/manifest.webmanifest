@@ -1,7 +1,7 @@
 {
   "name": "살뜰 화장실맵",
   "short_name": "살뜰 화장실맵",
-  "description": "과천·안양 화장실 위치와 비밀번호 공유",
+  "description": "과천·안양·의왕 화장실 위치와 비밀번호 공유",
   "lang": "ko",
   "start_url": "/",
   "scope": "/",

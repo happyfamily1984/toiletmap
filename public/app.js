@@ -8,6 +8,7 @@
   var REGIONS = {
     gwacheon: { name: '과천', lat: 37.4292, lng: 126.9876 },
     anyang: { name: '안양', lat: 37.3943, lng: 126.9568 },
+    uiwang: { name: '의왕', lat: 37.3447, lng: 126.9683 },
   };
   var DEFAULT_CENTER = { lat: 37.412, lng: 126.968 };
 
@@ -317,7 +318,7 @@
   }
 
   function isServiceArea(area2) {
-    return /^(과천시|안양시)/.test(area2 || '');
+    return /^(과천시|안양시|의왕시)/.test(area2 || '');
   }
 
   // ---------------- 등록 모드 ----------------
@@ -353,14 +354,14 @@
     var lat = latlng.lat();
     var lng = latlng.lng();
     if (!inBounds(lat, lng)) {
-      toast('과천·안양 지역만 등록할 수 있어요');
+      toast('과천·안양·의왕 지역만 등록할 수 있어요');
       return;
     }
     setTempMarker(latlng);
     reverseGeocode(latlng).then(function (info) {
       if (info && info.area2 && !isServiceArea(info.area2)) {
         clearTempMarker();
-        toast('과천·안양 지역만 등록할 수 있어요 (' + info.area2 + ')');
+        toast('과천·안양·의왕 지역만 등록할 수 있어요 (' + info.area2 + ')');
         return;
       }
       showForm({ lat: lat, lng: lng, address: info ? info.address : '' });
@@ -373,10 +374,10 @@
     if (!q) return;
     $('search-input').blur();
 
-    var queries = /과천|안양/.test(q) ? [q] : [q, '과천시 ' + q, '안양시 ' + q];
+    var queries = /과천|안양|의왕/.test(q) ? [q] : [q, '과천시 ' + q, '안양시 ' + q, '의왕시 ' + q];
     var tryNext = function (i) {
       if (i >= queries.length) {
-        toast('과천·안양에서 주소를 찾지 못했어요');
+        toast('과천·안양·의왕에서 주소를 찾지 못했어요');
         return;
       }
       geocode(queries[i]).then(function (list) {
@@ -519,7 +520,7 @@
       var lat = pos.coords.latitude;
       var lng = pos.coords.longitude;
       if (!inBounds(lat, lng)) {
-        toast('현재 위치가 과천·안양 밖이에요');
+        toast('현재 위치가 과천·안양·의왕 밖이에요');
         return;
       }
       var latlng = new nm.LatLng(lat, lng);

@@ -113,13 +113,16 @@ for (const backend of BACKENDS) {
     }
   });
 
-  test(`[${backend}] 과천·안양 밖 위치는 거부, 이름이 비면 '화장실'`, async () => {
+  test(`[${backend}] 과천·안양·의왕 밖 위치는 거부, 이름이 비면 '화장실'`, async () => {
     const { server, call } = await startServer(backend);
     try {
       await call('POST', '/api/login', { code: '4821' });
       // 서울시청
       const seoul = await call('POST', '/api/toilets', { ...sample, lat: 37.5665, lng: 126.978 });
       assert.strictEqual(seoul.status, 400);
+      // 의왕시청
+      const uiwang = await call('POST', '/api/toilets', { ...sample, lat: 37.3447, lng: 126.9683 });
+      assert.strictEqual(uiwang.status, 201);
       const noName = await call('POST', '/api/toilets', { ...sample, name: '  ' });
       assert.strictEqual(noName.status, 201);
       assert.strictEqual(noName.body.toilet.name, '화장실');

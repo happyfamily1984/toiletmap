@@ -447,8 +447,8 @@
       '<form id="toilet-form" autocomplete="off">' +
         '<label class="field"><span>주소</span>' +
           '<input name="address" maxlength="120" value="' + escapeHtml(t.address) + '" placeholder="주소" /></label>' +
-        '<label class="field"><span>화장실 이름 *</span>' +
-          '<input name="name" maxlength="40" required value="' + escapeHtml(t.name) + '" placeholder="예: ○○빌딩 2층 화장실" /></label>' +
+        '<label class="field"><span>화장실 이름 (비워두면 \'화장실\')</span>' +
+          '<input name="name" maxlength="40" value="' + escapeHtml(t.name) + '" placeholder="예: ○○빌딩 2층 화장실" /></label>' +
         '<label class="field"><span>비밀번호</span>' +
           '<input name="password" maxlength="40" value="' + escapeHtml(t.password) + '" placeholder="예: 1234* (없으면 비워두세요)" /></label>' +
         '<label class="field"><span>설명</span>' +
@@ -481,10 +481,6 @@
         lat: t.lat,
         lng: t.lng,
       };
-      if (!payload.name.trim()) {
-        $('form-error').textContent = '화장실 이름을 입력해 주세요.';
-        return;
-      }
       submitBtn.disabled = true;
       var req = editing
         ? api('PUT', '/api/toilets/' + encodeURIComponent(t.id), payload)

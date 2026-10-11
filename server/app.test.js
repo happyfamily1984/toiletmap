@@ -113,7 +113,7 @@ for (const backend of BACKENDS) {
     }
   });
 
-  test(`[${backend}] 과천·안양 밖 위치와 이름 누락은 거부`, async () => {
+  test(`[${backend}] 과천·안양 밖 위치는 거부, 이름이 비면 '화장실'`, async () => {
     const { server, call } = await startServer(backend);
     try {
       await call('POST', '/api/login', { code: '4821' });
@@ -121,7 +121,10 @@ for (const backend of BACKENDS) {
       const seoul = await call('POST', '/api/toilets', { ...sample, lat: 37.5665, lng: 126.978 });
       assert.strictEqual(seoul.status, 400);
       const noName = await call('POST', '/api/toilets', { ...sample, name: '  ' });
-      assert.strictEqual(noName.status, 400);
+      assert.strictEqual(noName.status, 201);
+      assert.strictEqual(noName.body.toilet.name, '화장실');
+      const cleared = await call('PUT', `/api/toilets/${noName.body.toilet.id}`, { name: '' });
+      assert.strictEqual(cleared.body.toilet.name, '화장실');
     } finally {
       server.close();
     }

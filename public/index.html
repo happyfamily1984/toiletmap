@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1f9d6b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="살뜰 화장실맵" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="description" content="과천·안양 화장실 위치와 비밀번호를 공유하는 살뜰 화장실맵" />
+  <title>살뜰 화장실맵</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- 접속 코드 화면 -->
+  <section id="login" class="login" hidden>
+    <div class="login-inner">
+      <img class="login-logo" src="/icons/icon-192.png" alt="" width="72" height="72" />
+      <h1>살뜰 화장실맵</h1>
+      <p class="login-sub">접속 코드 4자리를 입력하세요</p>
+      <div class="pin-dots" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <input id="pin-input" class="sr-only" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="접속 코드" />
+      <p id="login-error" class="login-error" role="alert"></p>
+      <div class="keypad">
+        <button type="button" data-key="1">1</button>
+        <button type="button" data-key="2">2</button>
+        <button type="button" data-key="3">3</button>
+        <button type="button" data-key="4">4</button>
+        <button type="button" data-key="5">5</button>
+        <button type="button" data-key="6">6</button>
+        <button type="button" data-key="7">7</button>
+        <button type="button" data-key="8">8</button>
+        <button type="button" data-key="9">9</button>
+        <span></span>
+        <button type="button" data-key="0">0</button>
+        <button type="button" data-key="back" aria-label="지우기">⌫</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 지도 화면 -->
+  <section id="main" class="main" hidden>
+    <div id="map" class="map"></div>
+
+    <header class="topbar">
+      <form id="search-form" class="search" autocomplete="off">
+        <input id="search-input" type="search" placeholder="주소 검색 (예: 과천시 별양로 12)" enterkeyhint="search" />
+        <button type="submit" aria-label="검색">🔍</button>
+      </form>
+      <button id="menu-btn" class="icon-btn" type="button" aria-label="메뉴">☰</button>
+      <div id="menu" class="menu" hidden>
+        <div class="menu-title">살뜰 화장실맵</div>
+        <button type="button" data-region="gwacheon">과천으로 이동</button>
+        <button type="button" data-region="anyang">안양으로 이동</button>
+        <button type="button" id="logout-btn">로그아웃</button>
+      </div>
+    </header>
+
+    <div id="hint" class="hint">지도에서 위치를 누르면 화장실을 등록할 수 있어요</div>
+
+    <div class="fabs">
+      <button id="locate-btn" class="fab" type="button" aria-label="내 위치">◎</button>
+    </div>
+
+    <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>
+    <div id="sheet" class="sheet" hidden role="dialog" aria-modal="true">
+      <div class="sheet-handle"></div>
+      <div id="sheet-body"></div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <div id="ad-bar" class="ad-bar" hidden></div>
+  </section>
+
+  <div id="fatal" class="fatal" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

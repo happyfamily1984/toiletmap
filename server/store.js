@@ -12,6 +12,8 @@ const REGION_BOUNDS = {
   maxLng: 127.05,
 };
 
+const DEFAULT_NAME = '화장실';
+
 const LIMITS = {
   name: 40,
   address: 120,
@@ -41,8 +43,8 @@ function validateToilet(input, { partial = false } = {}) {
   const out = {};
 
   if (!partial || input.name !== undefined) {
-    out.name = cleanText(input.name, LIMITS.name);
-    if (!out.name) return { error: '화장실 이름을 입력해 주세요.' };
+    // 이름은 선택 사항. 비워 두면 '화장실'로 저장
+    out.name = cleanText(input.name, LIMITS.name) || DEFAULT_NAME;
   }
   if (!partial || input.address !== undefined) {
     out.address = cleanText(input.address, LIMITS.address);

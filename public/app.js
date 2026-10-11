@@ -23,6 +23,7 @@
     zone: null,        // 살뜰 권역 데이터 (zone.json)
     zoneShapes: [],    // 지도에 그린 권역 폴리곤
     zoneOn: false,
+    filter: 'all',     // 별점 필터: 'all' 또는 1~5
     labelMode: false,
     addMode: false,
   };
@@ -195,12 +196,45 @@
     }, 5000);
   }
 
+  // ---------------- 별점 ----------------
+  var DEFAULT_RATING = 3;
+  var FILTER_KEY = 'toiletmap.starFilter';
+
+  function ratingOf(t) {
+    var r = Number(t && t.rating);
+    return r >= 1 && r <= 5 ? r : DEFAULT_RATING;
+  }
+
+  function starsText(n) {
+    return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+  }
+
+  function isShown(t) {
+    return state.filter === 'all' || ratingOf(t) === state.filter;
+  }
+
+  function setFilter(f, announce) {
+    state.filter = f;
+    try { localStorage.setItem(FILTER_KEY, String(f)); } catch (e) { /* 무시 */ }
+    var btns = document.querySelectorAll('#star-filter button');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-filter') === String(f));
+    }
+    if (!state.map) return;
+    renderMarkers();
+    if (announce) {
+      var n = state.toilets.filter(isShown).length;
+      toast((f === 'all' ? '전체' : '별 ' + f + '개') + ' 화장실 ' + n + '곳');
+    }
+  }
+
   function markerIcon(t) {
     var nm = naver.maps;
     var html;
     if (state.labelMode) {
       html = '<div class="label-marker">' +
         '<div class="label-name">' + escapeHtml(t.name) + '</div>' +
+        '<div class="label-stars">' + starsText(ratingOf(t)) + '</div>' +
         (t.password
           ? '<div class="label-pw">🔑 ' + escapeHtml(t.password) + '</div>'
           : '<div class="label-pw none">비밀번호 없음</div>') +
@@ -230,6 +264,7 @@
         m.setIcon(markerIcon(t));
       }
       m.setZIndex(state.labelMode ? 100 : 50);
+      m.setVisible(isShown(t));
     });
     Object.keys(state.markers).forEach(function (id) {
       if (!seen[id]) {
@@ -385,6 +420,7 @@
     clearTempMarker();
     openSheet(
       '<h2>' + escapeHtml(t.name) + '</h2>' +
+      '<div class="stars">' + starsText(ratingOf(t)) + '</div>' +
       '<p class="address">' + escapeHtml(t.address || '주소 정보 없음') + '</p>' +
       '<div class="pw-box' + (t.password ? '' : ' none') + '">' +
         '<div><div class="k">비밀번호</div><div class="v">' +
@@ -415,6 +451,13 @@
           '<input name="address" maxlength="120" value="' + escapeHtml(t.address) + '" placeholder="주소" /></label>' +
         '<label class="field"><span>화장실 이름 (비워두면 \'화장실\')</span>' +
           '<input name="name" maxlength="40" value="' + escapeHtml(t.name) + '" placeholder="예: ○○빌딩 2층 화장실" /></label>' +
+        '<div class="field"><span>별점</span>' +
+          '<div class="star-pick" id="star-pick">' +
+            [1, 2, 3, 4, 5].map(function (n) {
+              return '<button type="button" data-star="' + n + '" aria-label="별 ' + n + '개">★</button>';
+            }).join('') +
+          '</div>' +
+          '<input type="hidden" name="rating" value="' + ratingOf(t) + '" /></div>' +
         '<label class="field"><span>비밀번호</span>' +
           '<input name="password" maxlength="40" value="' + escapeHtml(t.password) + '" placeholder="예: 1234* (없으면 비워두세요)" /></label>' +
         '<label class="field"><span>설명</span>' +
@@ -428,7 +471,19 @@
       '</form>'
     );
     var form = $('toilet-form');
+    function paintStars() {
+      var r = Number(form.elements.rating.value);
+      var btns = form.querySelectorAll('#star-pick button');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('on', i < r);
+    }
+    paintStars();
     $('sheet-body').onclick = function (e) {
+      var star = e.target.closest('button[data-star]');
+      if (star) {
+        form.elements.rating.value = star.getAttribute('data-star');
+        paintStars();
+        return;
+      }
       var btn = e.target.closest('button[data-act="cancel"]');
       if (!btn) return;
       if (editing) showDetail(findToilet(t.id) || t);
@@ -444,6 +499,7 @@
         address: form.elements.address.value,
         password: form.elements.password.value,
         description: form.elements.description.value,
+        rating: Number(form.elements.rating.value),
         lat: t.lat,
         lng: t.lng,
       };
@@ -577,6 +633,15 @@
 
   function setupMainUi() {
     $('locate-btn').addEventListener('click', locate);
+    $('star-filter').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-filter]');
+      if (!btn) return;
+      var f = btn.getAttribute('data-filter');
+      setFilter(f === 'all' ? 'all' : Number(f), true);
+    });
+    var savedFilter = null;
+    try { savedFilter = localStorage.getItem(FILTER_KEY); } catch (e) { /* 무시 */ }
+    setFilter(/^[1-5]$/.test(savedFilter || '') ? Number(savedFilter) : 'all', false);
     $('zone-btn').addEventListener('click', function () {
       if (state.map) setZone(!state.zoneOn, true);
     });

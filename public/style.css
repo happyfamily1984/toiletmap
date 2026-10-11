@@ -215,3 +215,23 @@ input, textarea { font: inherit; }
 }
 .main.has-ad .map { height: calc(100% - 50px - var(--safe-bottom)); }
 .main.has-ad .fabs { bottom: calc(74px + var(--safe-bottom)); }
+
+/* ---------- 별점 ---------- */
+.star-filter {
+  position: absolute; left: 12px; top: calc(112px + var(--safe-top)); z-index: 5;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.star-filter button {
+  min-width: 52px; padding: 7px 8px; border: 0; border-radius: 10px;
+  background: var(--surface); box-shadow: var(--shadow);
+  color: #f5a400; font-size: 12px; font-weight: 700; letter-spacing: -1px; text-align: left;
+}
+.star-filter button[data-filter="all"] { color: var(--text); letter-spacing: 0; text-align: center; }
+.star-filter button.active { background: #f5a400; color: #fff; }
+.label-stars { font-size: 11px; color: #f5a400; letter-spacing: -0.5px; line-height: 1.2; }
+.stars { color: #f5a400; font-size: 20px; letter-spacing: 1px; margin: 2px 0 6px; }
+.star-pick { display: flex; gap: 6px; }
+.star-pick button {
+  border: 0; background: none; padding: 0 2px; font-size: 34px; line-height: 1; color: #d5dbd8;
+}
+.star-pick button.on { color: #f5a400; }

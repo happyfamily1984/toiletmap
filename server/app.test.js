@@ -132,4 +132,25 @@ for (const backend of BACKENDS) {
       server.close();
     }
   });
+
+  test(`[${backend}] 별점: 기본 3점, 1~5만 허용, 수정 가능`, async () => {
+    const { server, call } = await startServer(backend);
+    try {
+      await call('POST', '/api/login', { code: '4821' });
+      const plain = await call('POST', '/api/toilets', sample);
+      assert.strictEqual(plain.body.toilet.rating, 3);
+      const five = await call('POST', '/api/toilets', { ...sample, rating: 5 });
+      assert.strictEqual(five.body.toilet.rating, 5);
+      assert.strictEqual((await call('POST', '/api/toilets', { ...sample, rating: 6 })).status, 400);
+      assert.strictEqual((await call('POST', '/api/toilets', { ...sample, rating: 2.5 })).status, 400);
+      const one = await call('PUT', `/api/toilets/${plain.body.toilet.id}`, { rating: 1 });
+      assert.strictEqual(one.body.toilet.rating, 1);
+      const kept = await call('PUT', `/api/toilets/${plain.body.toilet.id}`, { password: '0000' });
+      assert.strictEqual(kept.body.toilet.rating, 1);
+      const list = await call('GET', '/api/toilets');
+      assert.deepStrictEqual(list.body.toilets.map((t) => t.rating).sort(), [1, 5]);
+    } finally {
+      server.close();
+    }
+  });
 }

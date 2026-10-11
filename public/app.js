@@ -21,7 +21,7 @@
     tempMarker: null,
     myMarker: null,
     zone: null,        // 살뜰 권역 데이터 (zone.json)
-    zoneShapes: [],    // 지도에 그린 권역 폴리곤 + 동 이름 라벨
+    zoneShapes: [],    // 지도에 그린 권역 폴리곤
     zoneOn: false,
     labelMode: false,
     addMode: false,
@@ -527,44 +527,30 @@
     });
   }
 
+  // 권역 전체를 하나의 영역으로 표시 (동별 구분 없음)
   function drawZone(z) {
     var nm = naver.maps;
-    z.areas.forEach(function (area) {
-      area.polygons.forEach(function (ring) {
-        var path = ring.map(function (p) { return new nm.LatLng(p[0], p[1]); });
-        state.zoneShapes.push(new nm.Polygon({
-          map: state.map,
-          paths: [path],
-          fillColor: '#ff5fa2',
-          fillOpacity: 0.18,
-          strokeColor: '#ff3d8b',
-          strokeOpacity: 0.7,
-          strokeWeight: 2,
-          clickable: false, // 등록 모드에서 지도 클릭이 그대로 통하도록
-          zIndex: 1,
-        }));
-        // 동 이름 라벨 (꼭짓점 평균 위치)
-        var lat = 0, lng = 0;
-        ring.forEach(function (p) { lat += p[0]; lng += p[1]; });
-        state.zoneShapes.push(new nm.Marker({
-          map: state.map,
-          position: new nm.LatLng(lat / ring.length, lng / ring.length),
-          clickable: false,
-          zIndex: 2,
-          icon: { content: '<div class="zone-label">' + escapeHtml(area.name) + '</div>', anchor: new nm.Point(0, 0) },
-        }));
-      });
+    z.polygons.forEach(function (ring) {
+      state.zoneShapes.push(new nm.Polygon({
+        map: state.map,
+        paths: [ring.map(function (p) { return new nm.LatLng(p[0], p[1]); })],
+        fillColor: '#ff5fa2',
+        fillOpacity: 0.18,
+        strokeColor: '#ff3d8b',
+        strokeOpacity: 0.7,
+        strokeWeight: 2,
+        clickable: false, // 등록 모드에서 지도 클릭이 그대로 통하도록
+        zIndex: 1,
+      }));
     });
   }
 
   function zoneBounds(z) {
     var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-    z.areas.forEach(function (a) {
-      a.polygons.forEach(function (ring) {
-        ring.forEach(function (p) {
-          minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]);
-          minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]);
-        });
+    z.polygons.forEach(function (ring) {
+      ring.forEach(function (p) {
+        minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]);
+        minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]);
       });
     });
     return new naver.maps.LatLngBounds(

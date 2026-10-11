@@ -85,11 +85,6 @@ input, textarea { font: inherit; }
   font-weight: 700; font-size: 15px; box-shadow: var(--shadow);
 }
 .zone-btn.active { background: #ff5fa2; color: #fff; }
-.zone-label {
-  transform: translate(-50%, -50%); white-space: nowrap; pointer-events: none;
-  font-size: 12px; font-weight: 700; color: #d02a72;
-  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
-}
 .icon-btn {
   width: 46px; height: 46px; border: 0; border-radius: 12px; background: var(--surface);
   box-shadow: var(--shadow); font-size: 20px;

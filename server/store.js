@@ -13,6 +13,8 @@ const REGION_BOUNDS = {
 };
 
 const DEFAULT_NAME = '화장실';
+// 별점 1~5, 입력하지 않았거나 예전에 등록된 화장실은 3
+const DEFAULT_RATING = 3;
 
 const LIMITS = {
   name: 40,
@@ -55,6 +57,17 @@ function validateToilet(input, { partial = false } = {}) {
   if (!partial || input.password !== undefined) {
     out.password = cleanText(input.password, LIMITS.password);
   }
+  if (!partial || input.rating !== undefined) {
+    if (input.rating === undefined || input.rating === null || input.rating === '') {
+      out.rating = DEFAULT_RATING;
+    } else {
+      const rating = Number(input.rating);
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return { error: '별점은 1~5 사이로 선택해 주세요.' };
+      }
+      out.rating = rating;
+    }
+  }
   if (!partial || input.lat !== undefined || input.lng !== undefined) {
     const lat = Number(input.lat);
     const lng = Number(input.lng);
@@ -68,6 +81,11 @@ function validateToilet(input, { partial = false } = {}) {
     out.lng = Math.round(lng * 1e7) / 1e7;
   }
   return { value: out };
+}
+
+// 별점이 없는 예전 데이터는 3점으로 보여준다
+function withRating(t) {
+  return t.rating ? t : { ...t, rating: DEFAULT_RATING };
 }
 
 /**
@@ -98,7 +116,7 @@ class FileStore {
   }
 
   async list() {
-    return this.items;
+    return this.items.map(withRating);
   }
 
   async create(data) {
@@ -106,7 +124,7 @@ class FileStore {
     const item = { id: crypto.randomUUID(), ...data, createdAt: now, updatedAt: now };
     this.items.push(item);
     this.save();
-    return item;
+    return withRating(item);
   }
 
   async update(id, data) {
@@ -114,7 +132,7 @@ class FileStore {
     if (!item) return null;
     Object.assign(item, data, { updatedAt: new Date().toISOString() });
     this.save();
-    return item;
+    return withRating(item);
   }
 
   async remove(id) {
@@ -130,7 +148,7 @@ class FileStore {
  * PostgreSQL 저장소 (Neon 무료 DB 등). DATABASE_URL 이 있으면 사용한다.
  * 서버가 재시작/재배포돼도 데이터가 남는다.
  */
-const PG_COLUMNS = ['name', 'address', 'description', 'password', 'lat', 'lng'];
+const PG_COLUMNS = ['name', 'address', 'description', 'password', 'rating', 'lat', 'lng'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function fromRow(r) {
@@ -140,6 +158,7 @@ function fromRow(r) {
     address: r.address,
     description: r.description,
     password: r.password,
+    rating: r.rating || DEFAULT_RATING,
     lat: r.lat,
     lng: r.lng,
     createdAt: r.created_at.toISOString(),
@@ -168,6 +187,10 @@ class PgStore {
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       )`);
+    // 별점 컬럼 추가 (예전에 만든 표에도 적용, 기존 화장실은 3점)
+    await this.pool.query(
+      `ALTER TABLE toilets ADD COLUMN IF NOT EXISTS rating smallint NOT NULL DEFAULT ${DEFAULT_RATING}`
+    );
   }
 
   async list() {
@@ -177,9 +200,9 @@ class PgStore {
 
   async create(data) {
     const { rows } = await this.pool.query(
-      `INSERT INTO toilets (id, name, address, description, password, lat, lng)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [crypto.randomUUID(), data.name, data.address, data.description, data.password, data.lat, data.lng]
+      `INSERT INTO toilets (id, name, address, description, password, rating, lat, lng)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [crypto.randomUUID(), data.name, data.address, data.description, data.password, data.rating, data.lat, data.lng]
     );
     return fromRow(rows[0]);
   }

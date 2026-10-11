@@ -3,6 +3,8 @@
 
   // 이 줌 레벨 이상이면 마커에 이름 + 비밀번호를 표시
   var LABEL_ZOOM = 16;
+  // 이 줌 레벨 이상으로 확대해야 지도를 눌러 화장실을 등록할 수 있음
+  var ADD_ZOOM = 16;
   var REGIONS = {
     gwacheon: { name: '과천', lat: 37.4292, lng: 126.9876 },
     anyang: { name: '안양', lat: 37.3943, lng: 126.9568 },
@@ -18,6 +20,7 @@
     tempMarker: null,
     myMarker: null,
     labelMode: false,
+    addMode: false,
   };
 
   // ---------------- 공통 ----------------
@@ -173,14 +176,19 @@
       $('menu').hidden = true;
       onMapClick(e.coord);
     });
-    nm.Event.addListener(state.map, 'zoom_changed', updateLabelMode);
+    nm.Event.addListener(state.map, 'zoom_changed', function () {
+      updateLabelMode();
+      updateAddHint();
+    });
     window.addEventListener('resize', function () {
       var el = $('map');
       state.map.setSize(new nm.Size(el.offsetWidth, el.offsetHeight));
     });
     updateLabelMode();
 
-    setTimeout(function () { $('hint').classList.add('fade'); }, 5000);
+    setTimeout(function () {
+      if (!state.addMode) $('hint').classList.add('fade');
+    }, 5000);
   }
 
   function markerIcon(t) {
@@ -312,7 +320,36 @@
     return /^(과천시|안양시)/.test(area2 || '');
   }
 
+  // ---------------- 등록 모드 ----------------
+  function setAddMode(on) {
+    state.addMode = on;
+    var btn = $('add-btn');
+    btn.classList.toggle('active', on);
+    btn.textContent = on ? '✕ 등록 취소' : '＋ 화장실 등록';
+    if (!on) clearTempMarker();
+    updateAddHint();
+  }
+
+  function updateAddHint() {
+    var hint = $('hint');
+    if (!state.addMode) {
+      hint.classList.add('fade');
+      return;
+    }
+    var need = ADD_ZOOM - state.map.getZoom();
+    hint.textContent = need > 0
+      ? '지도를 ' + need + '단계 더 확대해 주세요'
+      : '등록할 위치를 지도에서 눌러 주세요';
+    hint.classList.remove('fade');
+  }
+
   function onMapClick(latlng) {
+    // 등록 버튼을 누른 뒤, 충분히 확대된 상태에서만 등록
+    if (!state.addMode) return;
+    if (state.map.getZoom() < ADD_ZOOM) {
+      toast('지도를 더 확대한 뒤 위치를 눌러 주세요');
+      return;
+    }
     var lat = latlng.lat();
     var lng = latlng.lng();
     if (!inBounds(lat, lng)) {
@@ -350,14 +387,8 @@
           if (inBounds(lat, lng)) { hit = { lat: lat, lng: lng, item: list[k] }; break; }
         }
         if (!hit) return tryNext(i + 1);
-        var latlng = new naver.maps.LatLng(hit.lat, hit.lng);
-        state.map.morph(latlng, 17);
-        setTempMarker(latlng);
-        showForm({
-          lat: hit.lat,
-          lng: hit.lng,
-          address: hit.item.roadAddress || hit.item.jibunAddress || q,
-        });
+        state.map.morph(new naver.maps.LatLng(hit.lat, hit.lng), 17);
+        toast(hit.item.roadAddress || hit.item.jibunAddress || q);
       });
     };
     tryNext(0);
@@ -463,6 +494,7 @@
         var idx = state.toilets.findIndex(function (x) { return x.id === saved.id; });
         if (idx >= 0) state.toilets[idx] = saved; else state.toilets.push(saved);
         clearTempMarker();
+        if (!editing) setAddMode(false);
         renderMarkers();
         showDetail(saved);
         toast(editing ? '수정했어요' : '등록했어요');
@@ -517,6 +549,7 @@
   // 안드로이드 앱의 뒤로가기 버튼: 열린 시트/메뉴를 먼저 닫는다
   window.toiletmapBack = function () {
     if (!$('sheet').hidden) { closeSheet(); return true; }
+    if (state.addMode) { setAddMode(false); return true; }
     if (!$('menu').hidden) { $('menu').hidden = true; return true; }
     return false;
   };
@@ -524,6 +557,9 @@
   function setupMainUi() {
     $('search-form').addEventListener('submit', onSearch);
     $('locate-btn').addEventListener('click', locate);
+    $('add-btn').addEventListener('click', function () {
+      if (state.map) setAddMode(!state.addMode);
+    });
     $('sheet-backdrop').addEventListener('click', closeSheet);
     $('menu-btn').addEventListener('click', function () {
       $('menu').hidden = !$('menu').hidden;

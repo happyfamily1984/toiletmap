@@ -109,7 +109,17 @@ input, textarea { font: inherit; }
 }
 .hint.fade { opacity: 0; }
 
-.fabs { position: absolute; right: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5; }
+.fabs {
+  position: absolute; right: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+}
+.add-btn {
+  border: 0; border-radius: 999px; padding: 13px 18px;
+  background: var(--brand); color: #fff; font-weight: 700; font-size: 15px;
+  box-shadow: var(--shadow);
+}
+.add-btn:active { background: var(--brand-dark); }
+.add-btn.active { background: #ff8a00; }
 .fab {
   width: 48px; height: 48px; border-radius: 50%; border: 0;
   background: var(--surface); box-shadow: var(--shadow); font-size: 22px; color: var(--brand-dark);

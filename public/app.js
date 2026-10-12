@@ -2,7 +2,7 @@
   'use strict';
 
   // 이 줌 레벨 이상이면 마커에 이름 + 비밀번호를 표시
-  var LABEL_ZOOM = 16;
+  var LABEL_ZOOM = 17;
   // 이 줌 레벨 이상으로 확대해야 지도를 눌러 화장실을 등록할 수 있음
   var ADD_ZOOM = 16;
   var REGIONS = {

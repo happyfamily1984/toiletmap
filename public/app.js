@@ -23,7 +23,6 @@
     zones: null,       // 권역 데이터 (zones.json)
     zoneShapes: [],    // 지도에 그린 권역 폴리곤
     activeZone: null,  // 'salddeul' | 'finish' | null
-    filter: 'all',     // 별점 필터: 'all' 또는 1~5
     labelMode: false,
     addMode: false,
     canEdit: false,    // 편집 코드(6511)로 접속했을 때만 true. 보기 코드(0000)는 false
@@ -199,7 +198,6 @@
 
   // ---------------- 별점 ----------------
   var DEFAULT_RATING = 3;
-  var FILTER_KEY = 'toiletmap.starFilter';
 
   function ratingOf(t) {
     var r = Number(t && t.rating);
@@ -208,25 +206,6 @@
 
   function starsText(n) {
     return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
-  }
-
-  function isShown(t) {
-    return state.filter === 'all' || ratingOf(t) === state.filter;
-  }
-
-  function setFilter(f, announce) {
-    state.filter = f;
-    try { localStorage.setItem(FILTER_KEY, String(f)); } catch (e) { /* 무시 */ }
-    var btns = document.querySelectorAll('#star-filter button');
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].classList.toggle('active', btns[i].getAttribute('data-filter') === String(f));
-    }
-    if (!state.map) return;
-    renderMarkers();
-    if (announce) {
-      var n = state.toilets.filter(isShown).length;
-      toast((f === 'all' ? '전체' : '별 ' + f + '개') + ' 화장실 ' + n + '곳');
-    }
   }
 
   // 별 5개: 금색 + 왕관 + 반짝이, 별 4개: 금색
@@ -278,7 +257,6 @@
         m.setIcon(markerIcon(t));
       }
       m.setZIndex(state.labelMode ? 100 : 50);
-      m.setVisible(isShown(t));
     });
     Object.keys(state.markers).forEach(function (id) {
       if (!seen[id]) {
@@ -671,15 +649,6 @@
 
   function setupMainUi() {
     $('locate-btn').addEventListener('click', locate);
-    $('star-filter').addEventListener('click', function (e) {
-      var btn = e.target.closest('button[data-filter]');
-      if (!btn) return;
-      var f = btn.getAttribute('data-filter');
-      setFilter(f === 'all' ? 'all' : Number(f), true);
-    });
-    var savedFilter = null;
-    try { savedFilter = localStorage.getItem(FILTER_KEY); } catch (e) { /* 무시 */ }
-    setFilter(/^[1-5]$/.test(savedFilter || '') ? Number(savedFilter) : 'all', false);
     // 프로모션 전단지
     document.querySelector('.promo-row').addEventListener('click', function (e) {
       var btn = e.target.closest('.promo-btn');

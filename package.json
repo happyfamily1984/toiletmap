@@ -2,7 +2,7 @@
   "name": "salddeul-toiletmap",
   "version": "1.0.0",
   "private": true,
-  "description": "살뜰 화장실맵 - 과천·안양·의왕 화장실 위치/비밀번호 공유 모바일 웹앱",
+  "description": "안양 과천 화장실맵 - 과천·안양·의왕 화장실 위치/비밀번호 공유 모바일 웹앱",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",

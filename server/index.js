@@ -54,7 +54,7 @@ store
   .then(() => {
     const port = Number(env.PORT) || 3000;
     createApp(config, store).listen(port, () => {
-      console.log(`살뜰 화장실맵 서버 실행 중: http://localhost:${port}`);
+      console.log(`안양 과천 화장실맵 서버 실행 중: http://localhost:${port}`);
       console.log(env.DATABASE_URL ? '저장소: PostgreSQL (DATABASE_URL)' : '저장소: JSON 파일');
     });
   })

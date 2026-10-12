@@ -13,6 +13,7 @@ function createApp(config, store) {
   const app = express();
   const auth = createAuth({
     accessCode: config.accessCode,
+    viewCode: config.viewCode,
     secret: config.sessionSecret,
     secureCookie: config.secureCookie,
   });
@@ -37,7 +38,7 @@ function createApp(config, store) {
   });
 
   app.get('/api/session', (req, res) => {
-    res.json({ authed: auth.isAuthed(req) });
+    res.json({ authed: auth.isAuthed(req), canEdit: auth.canEdit(req) });
   });
 
   app.post('/api/login', auth.login);
@@ -49,13 +50,13 @@ function createApp(config, store) {
     res.json({ toilets: await store.list() });
   }));
 
-  app.post('/api/toilets', auth.requireAuth, wrap(async (req, res) => {
+  app.post('/api/toilets', auth.requireEditor, wrap(async (req, res) => {
     const { error, value } = validateToilet(req.body || {});
     if (error) return res.status(400).json({ error });
     res.status(201).json({ toilet: await store.create(value) });
   }));
 
-  app.put('/api/toilets/:id', auth.requireAuth, wrap(async (req, res) => {
+  app.put('/api/toilets/:id', auth.requireEditor, wrap(async (req, res) => {
     const { error, value } = validateToilet(req.body || {}, { partial: true });
     if (error) return res.status(400).json({ error });
     const toilet = await store.update(req.params.id, value);
@@ -63,7 +64,7 @@ function createApp(config, store) {
     res.json({ toilet });
   }));
 
-  app.delete('/api/toilets/:id', auth.requireAuth, wrap(async (req, res) => {
+  app.delete('/api/toilets/:id', auth.requireEditor, wrap(async (req, res) => {
     if (!(await store.remove(req.params.id))) {
       return res.status(404).json({ error: '화장실을 찾을 수 없습니다.' });
     }

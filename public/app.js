@@ -579,6 +579,7 @@
 
   // 안드로이드 앱의 뒤로가기 버튼: 열린 시트/메뉴를 먼저 닫는다
   window.toiletmapBack = function () {
+    if (!$('promo').hidden) { $('promo').hidden = true; return true; }
     if (!$('sheet').hidden) { closeSheet(); return true; }
     if (state.addMode) { setAddMode(false); return true; }
     if (!$('menu').hidden) { $('menu').hidden = true; return true; }
@@ -655,6 +656,24 @@
     var savedFilter = null;
     try { savedFilter = localStorage.getItem(FILTER_KEY); } catch (e) { /* 무시 */ }
     setFilter(/^[1-5]$/.test(savedFilter || '') ? Number(savedFilter) : 'all', false);
+    // 프로모션 전단지
+    $('promo-btn').addEventListener('click', function () {
+      var btn = $('promo-btn');
+      var img = $('promo-img');
+      img.alt = btn.getAttribute('data-title');
+      img.src = '/api/promo/' + btn.getAttribute('data-promo');
+      $('promo').hidden = false;
+    });
+    $('promo').addEventListener('click', function (e) {
+      // 바깥 영역이나 ✕ 를 누르면 닫기
+      if (e.target === $('promo') || e.target.closest('.promo-close')) $('promo').hidden = true;
+    });
+    $('promo-img').addEventListener('error', function () {
+      if (!$('promo').hidden) {
+        $('promo').hidden = true;
+        toast('전단지를 불러오지 못했어요');
+      }
+    });
     $('zone-btn').addEventListener('click', function () {
       if (state.map) setZone(!state.zoneOn, true);
     });

@@ -210,8 +210,6 @@ input, textarea { font: inherit; }
 }
 .main.has-ad .map { height: calc(100% - 50px - var(--safe-bottom)); }
 .main.has-ad .fabs { bottom: calc(74px + var(--safe-bottom)); }
-.main.has-ad .join-btn {
-  border: 0; cursor: pointer; bottom: calc(74px + var(--safe-bottom)); }
 
 /* ---------- 별점 ---------- */
 .label-stars { font-size: 11px; color: #f5a400; letter-spacing: -0.5px; line-height: 1.2; }
@@ -305,10 +303,11 @@ input, textarea { font: inherit; }
 }
 
 /* ---------- 배민플러스 가입신청 (전화 연결) ---------- */
+/* 배민플러스 묶음 안, 권역·프로모션 버튼 아래에 같은 너비로 */
 .join-btn {
-  position: absolute; left: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5;
-  display: inline-flex; align-items: center; justify-content: center;
-  height: 48px; padding: 0 20px; border-radius: 999px;
+  align-self: stretch; border: 0;
+  display: flex; align-items: center; justify-content: center;
+  height: 46px; padding: 0 20px; border-radius: 16px;
   background: #ffd21f; color: #1d2420; font-size: 16px; font-weight: 900; text-decoration: none;
   box-shadow: var(--shadow);
 }

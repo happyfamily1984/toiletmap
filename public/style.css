@@ -82,11 +82,11 @@ input, textarea { font: inherit; }
 .zone-btns { margin-right: auto; display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .zone-btn {
   height: 42px; padding: 0 16px; border-radius: 12px;
-  /* 과천B = 청록, 동안A = 분홍 (권역 버튼·지도·전단지 버튼 모두 같은 색) */
-  border: 2px solid #12a19c; background: var(--surface); color: #0b7d79;
+  /* 과천B = 남색, 동안A = 분홍 (권역 버튼·지도·전단지 버튼 모두 같은 색) */
+  border: 2px solid #2f4fa8; background: var(--surface); color: #2f4fa8;
   font-weight: 700; font-size: 15px; box-shadow: var(--shadow);
 }
-.zone-btn.active { background: #12a19c; color: #fff; }
+.zone-btn.active { background: #2f4fa8; color: #fff; }
 .zone-btn.finish { border-color: #ff2d87; color: #d81b6c; }
 .zone-btn.finish.active { background: #ff2d87; color: #fff; }
 .icon-btn {
@@ -289,7 +289,7 @@ input, textarea { font: inherit; }
 /* ---------- 프로모션 전단지 ---------- */
 .promo-btn {
   border: 0; border-radius: 16px; padding: 9px 16px; line-height: 1.15;
-  background: linear-gradient(135deg, #16b3ad, #0b7d79); color: #fff;
+  background: linear-gradient(135deg, #3a5fc4, #2a4596); color: #fff;
   font-size: 17px; font-weight: 900; box-shadow: var(--shadow); text-align: center;
 }
 .promo-row { display: flex; gap: 8px; }
@@ -318,9 +318,9 @@ input, textarea { font: inherit; }
   position: absolute; left: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5;
   display: inline-flex; align-items: center; justify-content: center;
   height: 48px; padding: 0 20px; border-radius: 999px;
-  background: #2f4fa8; color: #fff; font-size: 16px; font-weight: 900; text-decoration: none;
+  background: #1f2f5c; color: #fff; font-size: 16px; font-weight: 900; text-decoration: none;
   box-shadow: var(--shadow);
 }
-.join-btn:active { background: #253f88; }
+.join-btn:active { background: #16234a; }
 
 .view-only { color: var(--muted); font-size: 14px; text-align: center; margin: 4px 0 0; }

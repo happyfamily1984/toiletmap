@@ -23,6 +23,7 @@
     zones: null,       // 권역 데이터 (zones.json)
     zoneShapes: [],    // 지도에 그린 권역 폴리곤
     activeZone: null,  // 'salddeul' | 'finish' | null
+    nearRank: null,    // 내 근처 강조 중이면 { 화장실id: 순위(1~3) }
     labelMode: false,
     addMode: false,
     canEdit: false,    // 편집 코드(6511)로 접속했을 때만 true. 보기 코드(0000)는 false
@@ -220,11 +221,13 @@
   function markerIcon(t) {
     var nm = naver.maps;
     var html;
-    var tier = tierClass(t);
+    var rank = state.nearRank && state.nearRank[t.id];
+    var tier = tierClass(t) + (rank ? ' near' : '');
+    var rankBadge = rank ? '<span class="near-rank">' + rank + '</span>' : '';
     var five = ratingOf(t) === 5;
     if (state.labelMode) {
       html = '<div class="label-marker' + tier + '">' +
-        (five ? '<span class="crown">👑</span>' + SPARKLES : '') +
+        (five ? '<span class="crown">👑</span>' + SPARKLES : '') + rankBadge +
         '<div class="label-name">' + escapeHtml(t.name) + '</div>' +
         '<div class="label-stars">' + starsText(ratingOf(t)) + '</div>' +
         (t.password
@@ -233,7 +236,7 @@
         '</div>';
     } else {
       html = '<div class="pin' + tier + '">' +
-        (five ? '<span class="crown">👑</span>' + SPARKLES : '') +
+        (five ? '<span class="crown">👑</span>' + SPARKLES : '') + rankBadge +
         '<div class="pin-shape"><span>WC</span></div></div>';
     }
     return { content: html, anchor: new nm.Point(0, 0) };
@@ -257,7 +260,7 @@
         m.setPosition(pos);
         m.setIcon(markerIcon(t));
       }
-      m.setZIndex(state.labelMode ? 100 : 50);
+      m.setZIndex(state.nearRank && state.nearRank[t.id] ? 300 - state.nearRank[t.id] : (state.labelMode ? 100 : 50));
     });
     Object.keys(state.markers).forEach(function (id) {
       if (!seen[id]) {
@@ -733,51 +736,43 @@
     return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
   }
 
+  var NEAR_COUNT = 3;
+
+  // 내 위치를 지도에 표시하고 가장 가까운 화장실 3곳을 크게 강조
   function nearby() {
     if (!state.map) return;
+    // 이미 강조 중이면 다시 누를 때 해제
+    if (state.nearRank) {
+      state.nearRank = null;
+      $('near-btn').classList.remove('active');
+      renderMarkers();
+      return;
+    }
     if (!state.toilets.length) return toast('아직 등록된 화장실이 없어요');
     toast('내 위치를 찾는 중…');
     getPosition(function (lat, lng) {
-      $('toast').hidden = true;
       var here = new naver.maps.LatLng(lat, lng);
       showMyLocation(here);
       var list = state.toilets.map(function (t) {
         return { t: t, d: distanceM(lat, lng, t.lat, t.lng) };
-      }).sort(function (x, y) { return x.d - y.d; }).slice(0, 5);
-      var best = list[0];
-      // 내 위치와 가장 가까운 화장실이 함께 보이게
+      }).sort(function (x, y) { return x.d - y.d; }).slice(0, NEAR_COUNT);
+      state.nearRank = {};
+      list.forEach(function (it, i) { state.nearRank[it.t.id] = i + 1; });
+      $('near-btn').classList.add('active');
+      renderMarkers();
+      // 내 위치와 가까운 화장실들이 한 화면에 보이게
+      var minLat = lat, maxLat = lat, minLng = lng, maxLng = lng;
+      list.forEach(function (it) {
+        minLat = Math.min(minLat, it.t.lat); maxLat = Math.max(maxLat, it.t.lat);
+        minLng = Math.min(minLng, it.t.lng); maxLng = Math.max(maxLng, it.t.lng);
+      });
       state.map.fitBounds(
-        new naver.maps.LatLngBounds(
-          new naver.maps.LatLng(Math.min(lat, best.t.lat), Math.min(lng, best.t.lng)),
-          new naver.maps.LatLng(Math.max(lat, best.t.lat), Math.max(lng, best.t.lng))
-        ),
-        { top: 120, right: 60, bottom: 360, left: 60 }
+        new naver.maps.LatLngBounds(new naver.maps.LatLng(minLat, minLng), new naver.maps.LatLng(maxLat, maxLng)),
+        { top: 170, right: 80, bottom: 200, left: 80 }
       );
-      openSheet(
-        '<h2>📍 내 근처 화장실</h2>' +
-        (best.d > 5000 ? '<p class="address">가까운 곳에 등록된 화장실이 없어요. 가장 가까운 곳은 ' + formatDistance(best.d) + ' 떨어져 있어요.</p>' : '') +
-        '<div class="near-list">' +
-        list.map(function (it, i) {
-          var t = it.t;
-          var walk = Math.max(1, Math.round(it.d / 67)); // 걸음 약 4km/h
-          return '<button type="button" class="near-item' + (i === 0 ? ' best' : '') + '" data-id="' + escapeHtml(t.id) + '">' +
-            (i === 0 ? '<span class="near-badge">가장 가까움</span>' : '') +
-            '<span class="near-top"><span class="near-name">' + escapeHtml(t.name) + '</span>' +
-              '<span class="near-dist">' + formatDistance(it.d) + '</span></span>' +
-            '<span class="near-sub"><span class="near-stars">' + starsText(ratingOf(t)) + '</span> · 걸어서 약 ' + walk + '분' +
-              (t.password ? ' · 🔑 ' + escapeHtml(t.password) : '') + '</span>' +
-          '</button>';
-        }).join('') +
-        '</div>'
-      );
-      $('sheet-body').onclick = function (e) {
-        var item = e.target.closest('button[data-id]');
-        if (!item) return;
-        var t = findToilet(item.getAttribute('data-id'));
-        if (!t) return;
-        state.map.morph(new naver.maps.LatLng(t.lat, t.lng), 17);
-        showDetail(t);
-      };
+      // 모두 아주 가까우면 너무 확대되지 않게
+      if (state.map.getZoom() > 17) state.map.setZoom(17);
+      toast('가까운 화장실 ' + list.length + '곳 · 가장 가까운 곳 ' + formatDistance(list[0].d));
     });
   }
 

@@ -25,7 +25,7 @@
     [vuski/admdongkor](https://github.com/vuski/admdongkor) ver20260701, CC BY 4.0)
 - **프로모션 전단지**: 오른쪽 **동안A**(배민플러스 피니시 동안A) / **과천B**(배민플러스 살뜰 과천B) 버튼을 누르면 전단지가 뜹니다.
   전단지는 접속 코드를 입력한 멤버만 볼 수 있습니다(`/api/promo/*.jpg`, 파일은 `server/promo/`).
-  내용을 바꾸려면 `server/promo/gwacheon-b.html` 을 고친 뒤 1080×1350 으로 캡처해 `gwacheon-b.jpg` 를 교체하세요.
+  내용을 바꾸려면 `server/promo/gwacheon-b.html` 을 고친 뒤 1086×1448 로 캡처해 `gwacheon-b.jpg` 를 교체하세요.
 - **내 위치** 버튼, 과천/안양/의왕으로 바로 이동하는 메뉴가 있습니다.
 - 홈 화면에 추가(PWA)할 수 있습니다.
 

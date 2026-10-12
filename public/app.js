@@ -23,7 +23,8 @@
     zones: null,       // 권역 데이터 (zones.json)
     zoneShapes: [],    // 지도에 그린 권역 폴리곤
     activeZone: null,  // 'salddeul' | 'finish' | null
-    nearRank: null,    // 내 근처 강조 중이면 { 화장실id: 순위(1~3) }
+    nearId: null,      // 내 근처: 가장 가까운 화장실 id
+    routeLine: null,   // 내 근처: 경로 선
     labelMode: false,
     addMode: false,
     canEdit: false,    // 편집 코드(6511)로 접속했을 때만 true. 보기 코드(0000)는 false
@@ -221,9 +222,9 @@
   function markerIcon(t) {
     var nm = naver.maps;
     var html;
-    var rank = state.nearRank && state.nearRank[t.id];
-    var tier = tierClass(t) + (rank ? ' near' : '');
-    var rankBadge = rank ? '<span class="near-rank">' + rank + '</span>' : '';
+    var isNear = state.nearId === t.id;
+    var tier = tierClass(t);
+    var rankBadge = isNear ? '<span class="near-tag">가장 가까움</span>' : '';
     var five = ratingOf(t) === 5;
     if (state.labelMode) {
       html = '<div class="label-marker' + tier + '">' +
@@ -260,7 +261,7 @@
         m.setPosition(pos);
         m.setIcon(markerIcon(t));
       }
-      m.setZIndex(state.nearRank && state.nearRank[t.id] ? 300 - state.nearRank[t.id] : (state.labelMode ? 100 : 50));
+      m.setZIndex(state.nearId === t.id ? 300 : (state.labelMode ? 100 : 50));
     });
     Object.keys(state.markers).forEach(function (id) {
       if (!seen[id]) {
@@ -736,43 +737,102 @@
     return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
   }
 
-  var NEAR_COUNT = 3;
+  // 걷는 길 경로 (OpenStreetMap 기반 무료 경로 서비스, FOSSGIS). 실패하면 직선 점선으로 표시
+  var ROUTE_URL = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/';
 
-  // 내 위치를 지도에 표시하고 가장 가까운 화장실 3곳을 크게 강조
+  function fetchWalkRoute(from, to) {
+    var url = ROUTE_URL + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat + '?overview=full&geometries=geojson';
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 7000);
+    return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
+      clearTimeout(timer);
+      if (!r.ok) throw new Error('route ' + r.status);
+      return r.json();
+    }).then(function (data) {
+      var route = data && data.routes && data.routes[0];
+      if (!route || !route.geometry) throw new Error('no route');
+      return {
+        path: route.geometry.coordinates.map(function (c) { return { lat: c[1], lng: c[0] }; }),
+        distance: route.distance,
+      };
+    });
+  }
+
+  function clearNearby() {
+    state.nearId = null;
+    if (state.routeLine) { state.routeLine.setMap(null); state.routeLine = null; }
+    $('near-btn').classList.remove('active');
+    renderMarkers();
+  }
+
+  function drawRoute(points, dashed) {
+    var nm = naver.maps;
+    if (state.routeLine) state.routeLine.setMap(null);
+    state.routeLine = new nm.Polyline({
+      map: state.map,
+      path: points.map(function (p) { return new nm.LatLng(p.lat, p.lng); }),
+      strokeColor: '#1f9d6b',
+      strokeWeight: dashed ? 4 : 6,
+      strokeOpacity: 0.85,
+      strokeStyle: dashed ? 'shortdash' : 'solid',
+      strokeLineCap: 'round',
+      strokeLineJoin: 'round',
+      clickable: false,
+      zIndex: 5,
+    });
+  }
+
+  // 내 근처: 내 위치 표시 + 가장 가까운 화장실 1곳 표시 + 걷는 길 경로
+  var NEAR_MAX_ZOOM = LABEL_ZOOM - 1; // 이름표가 나오기 직전 단계까지만 확대
+
   function nearby() {
     if (!state.map) return;
-    // 이미 강조 중이면 다시 누를 때 해제
-    if (state.nearRank) {
-      state.nearRank = null;
-      $('near-btn').classList.remove('active');
-      renderMarkers();
-      return;
-    }
+    if (state.nearId) return clearNearby(); // 다시 누르면 해제
     if (!state.toilets.length) return toast('아직 등록된 화장실이 없어요');
     toast('내 위치를 찾는 중…');
     getPosition(function (lat, lng) {
-      var here = new naver.maps.LatLng(lat, lng);
-      showMyLocation(here);
-      var list = state.toilets.map(function (t) {
-        return { t: t, d: distanceM(lat, lng, t.lat, t.lng) };
-      }).sort(function (x, y) { return x.d - y.d; }).slice(0, NEAR_COUNT);
-      state.nearRank = {};
-      list.forEach(function (it, i) { state.nearRank[it.t.id] = i + 1; });
+      var here = { lat: lat, lng: lng };
+      showMyLocation(new naver.maps.LatLng(lat, lng));
+      var best = null;
+      state.toilets.forEach(function (t) {
+        var d = distanceM(lat, lng, t.lat, t.lng);
+        if (!best || d < best.d) best = { t: t, d: d };
+      });
+      state.nearId = best.t.id;
       $('near-btn').classList.add('active');
       renderMarkers();
-      // 내 위치와 가까운 화장실들이 한 화면에 보이게
-      var minLat = lat, maxLat = lat, minLng = lng, maxLng = lng;
-      list.forEach(function (it) {
-        minLat = Math.min(minLat, it.t.lat); maxLat = Math.max(maxLat, it.t.lat);
-        minLng = Math.min(minLng, it.t.lng); maxLng = Math.max(maxLng, it.t.lng);
+
+      var dest = { lat: best.t.lat, lng: best.t.lng };
+      var fit = function (points) {
+        var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+        points.forEach(function (p) {
+          minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
+          minLng = Math.min(minLng, p.lng); maxLng = Math.max(maxLng, p.lng);
+        });
+        state.map.fitBounds(
+          new naver.maps.LatLngBounds(new naver.maps.LatLng(minLat, minLng), new naver.maps.LatLng(maxLat, maxLng)),
+          { top: 190, right: 70, bottom: 200, left: 70 }
+        );
+        if (state.map.getZoom() > NEAR_MAX_ZOOM) state.map.setZoom(NEAR_MAX_ZOOM);
+      };
+      var say = function (meters, viaRoad) {
+        var walk = Math.max(1, Math.round(meters / 67)); // 걸음 약 4km/h
+        toast('가장 가까운 화장실: ' + best.t.name + ' · ' + (viaRoad ? '' : '직선 ') +
+          formatDistance(meters) + ' (걸어서 약 ' + walk + '분)');
+      };
+
+      // 우선 직선 점선으로 바로 보여주고, 걷는 길 경로가 오면 바꿔 그림
+      drawRoute([here, dest], true);
+      fit([here, dest]);
+      fetchWalkRoute(here, dest).then(function (route) {
+        if (state.nearId !== best.t.id) return; // 그 사이 해제됨
+        drawRoute(route.path, false);
+        fit(route.path.concat([here, dest]));
+        say(route.distance, true);
+      }).catch(function () {
+        if (state.nearId !== best.t.id) return;
+        say(best.d, false);
       });
-      state.map.fitBounds(
-        new naver.maps.LatLngBounds(new naver.maps.LatLng(minLat, minLng), new naver.maps.LatLng(maxLat, maxLng)),
-        { top: 170, right: 80, bottom: 200, left: 80 }
-      );
-      // 모두 아주 가까우면 너무 확대되지 않게
-      if (state.map.getZoom() > 17) state.map.setZoom(17);
-      toast('가까운 화장실 ' + list.length + '곳 · 가장 가까운 곳 ' + formatDistance(list[0].d));
     });
   }
 

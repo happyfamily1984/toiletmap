@@ -179,9 +179,10 @@ for (const backend of BACKENDS) {
       assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '' })).status, 400);
       assert.strictEqual((await call('POST', '/api/applications', { ...form, phone: '12' })).status, 400);
       assert.strictEqual((await call('POST', '/api/applications', { ...form, zone: '서울' })).status, 400);
-      assert.strictEqual((await call('POST', '/api/applications', { ...form, weeklyCount: '' })).status, 400);
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, weeklyCount: 'abc' })).status, 400);
       assert.strictEqual((await call('POST', '/api/applications', form)).status, 201);
-      assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '김철수', zone: '과천B', weeklyCount: 120 })).status, 201);
+      // 주 평균 수행 건수는 비워도 됨
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '김철수', zone: '과천B', weeklyCount: '' })).status, 201);
 
       // 관리자 로그인 전에는 목록 불가
       assert.deepStrictEqual((await call('GET', '/api/admin/session')).body, { enabled: true, admin: false });
@@ -190,6 +191,7 @@ for (const backend of BACKENDS) {
       assert.strictEqual((await call('POST', '/api/admin/login', { password: '794613' })).status, 200);
       const list = (await call('GET', '/api/admin/applications')).body.applications;
       assert.deepStrictEqual(list.map((a) => a.name), ['김철수', '홍길동']); // 최신순
+      assert.strictEqual(list[0].weeklyCount, null);
       assert.strictEqual(list[1].phone, '01012345678');
       assert.strictEqual(list[1].weeklyCount, 250);
       assert.strictEqual(list[1].zone, '동안A');

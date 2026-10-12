@@ -533,7 +533,7 @@
           '<label><input type="radio" name="zone" value="과천B" /><span class="gb">과천B</span></label>' +
           '<label><input type="radio" name="zone" value="동안A" /><span class="da">동안A</span></label>' +
         '</div></div>' +
-        '<label class="field"><span>주 평균 수행 건수 *</span><input name="weeklyCount" type="number" inputmode="numeric" min="0" max="2000" placeholder="예: 150" /></label>' +
+        '<label class="field"><span>주 평균 수행 건수 (선택)</span><input name="weeklyCount" type="number" inputmode="numeric" min="0" max="2000" placeholder="예: 150" /></label>' +
         '<label class="field"><span>기타 하고 싶은 말</span><textarea name="message" maxlength="500" placeholder="문의 사항, 희망 시간대 등"></textarea></label>' +
         '<p class="form-error" id="form-error"></p>' +
         '<div class="actions">' +
@@ -560,7 +560,6 @@
       if (!payload.name.trim()) { $('form-error').textContent = '이름을 입력해 주세요.'; return; }
       if (!payload.phone.trim()) { $('form-error').textContent = '전화번호를 입력해 주세요.'; return; }
       if (!payload.zone) { $('form-error').textContent = '희망 권역을 선택해 주세요.'; return; }
-      if (payload.weeklyCount === '') { $('form-error').textContent = '주 평균 수행 건수를 입력해 주세요.'; return; }
       var btn = form.querySelector('button[type="submit"]');
       btn.disabled = true;
       api('POST', '/api/applications', payload).then(function () {
@@ -636,7 +635,8 @@
             '<div class="top"><span class="nm">' + escapeHtml(a.name) + '</span>' +
               '<span class="zn ' + zc + '">' + escapeHtml(a.zone) + '</span></div>' +
             '<a class="ph" href="tel:' + escapeHtml(a.phone) + '">📞 ' + escapeHtml(formatPhone(a.phone)) + '</a>' +
-            '<div class="meta2">주 평균 ' + Number(a.weeklyCount) + '건 · ' + escapeHtml(formatDateTime(a.createdAt)) + '</div>' +
+            '<div class="meta2">' + (a.weeklyCount === null || a.weeklyCount === undefined ? '' : '주 평균 ' + Number(a.weeklyCount) + '건 · ') +
+              escapeHtml(formatDateTime(a.createdAt)) + '</div>' +
             (a.message ? '<div class="msg">' + escapeHtml(a.message) + '</div>' : '') +
             '<button type="button" class="del" data-del="' + escapeHtml(a.id) + '">삭제</button>' +
           '</div>';

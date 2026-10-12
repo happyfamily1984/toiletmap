@@ -94,9 +94,13 @@ function validateApplication(input) {
   if (!/^0\d{8,10}$/.test(phone)) return { error: '전화번호를 정확히 입력해 주세요. (예: 010-1234-5678)' };
   const zone = cleanText(input.zone, 10);
   if (!APPLY_ZONES.includes(zone)) return { error: '희망 권역을 선택해 주세요.' };
-  const weekly = Number(input.weeklyCount);
-  if (input.weeklyCount === '' || input.weeklyCount === undefined || !Number.isInteger(weekly) || weekly < 0 || weekly > 2000) {
-    return { error: '주 평균 수행 건수를 숫자로 입력해 주세요.' };
+  // 주 평균 수행 건수는 선택 사항 (비우면 null)
+  let weekly = null;
+  if (input.weeklyCount !== undefined && input.weeklyCount !== null && String(input.weeklyCount).trim() !== '') {
+    weekly = Number(input.weeklyCount);
+    if (!Number.isInteger(weekly) || weekly < 0 || weekly > 2000) {
+      return { error: '주 평균 수행 건수는 숫자로 입력해 주세요.' };
+    }
   }
   const message = cleanText(input.message, 500);
   return { value: { name, phone, zone, weeklyCount: weekly, message } };
@@ -246,10 +250,12 @@ class PgStore {
         name text NOT NULL,
         phone text NOT NULL,
         zone text NOT NULL,
-        weekly_count integer NOT NULL,
+        weekly_count integer,
         message text NOT NULL DEFAULT '',
         created_at timestamptz NOT NULL DEFAULT now()
       )`);
+    // 주 평균 수행 건수를 선택 사항으로 (예전에 만든 표에도 적용)
+    await this.pool.query('ALTER TABLE applications ALTER COLUMN weekly_count DROP NOT NULL');
     // 별점 컬럼 추가 (예전에 만든 표에도 적용, 기존 화장실은 3점)
     await this.pool.query(
       `ALTER TABLE toilets ADD COLUMN IF NOT EXISTS rating smallint NOT NULL DEFAULT ${DEFAULT_RATING}`

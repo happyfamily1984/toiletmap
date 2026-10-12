@@ -1,56 +1,114 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{width:1080px;height:1350px;font-family:"Noto Sans CJK KR","Noto Sans KR",sans-serif;
- background:linear-gradient(160deg,#0f2b3d 0%,#123f4f 55%,#0d5a55 100%);color:#fff;position:relative;overflow:hidden}
-.glow{position:absolute;border-radius:50%;filter:blur(10px);opacity:.25}
-.g1{width:520px;height:520px;background:#2ee6c5;right:-160px;top:-160px}
-.g2{width:420px;height:420px;background:#ffd25a;left:-180px;bottom:-140px;opacity:.18}
-.wrap{position:relative;padding:64px 72px 0}
-.tag{display:inline-block;background:#2ee6c5;color:#0f2b3d;font-weight:900;font-size:34px;padding:12px 26px;border-radius:999px;letter-spacing:1px}
-h1{font-size:92px;font-weight:900;line-height:1.1;margin-top:24px;letter-spacing:-2px}
-h1 em{font-style:normal;color:#ffd25a}
-.sub{font-size:36px;color:#bfe9e1;margin-top:14px;font-weight:700}
-.cards{margin-top:40px;display:flex;flex-direction:column;gap:26px}
-.card{background:#fff;color:#0f2b3d;border-radius:34px;padding:36px 44px;display:flex;align-items:center;gap:34px;box-shadow:0 14px 30px rgba(0,0,0,.25)}
-.card .lv{flex:none;width:260px;white-space:nowrap;text-align:center;border-right:3px dashed #d6e4e1;padding-right:30px}
-.lv .n{font-size:84px;font-weight:900;line-height:1;color:#0d8f7f}
-.lv .n small{font-size:40px}
-.lv .t{font-size:30px;font-weight:800;color:#567;margin-top:6px}
-.card .bd .a{font-size:32px;font-weight:700;color:#567}
-.card .bd .b{font-size:64px;font-weight:900;line-height:1.15;letter-spacing:-1px}
-.card .bd .b .won{color:#e2441f}
-.card.gold{background:linear-gradient(135deg,#fff7d6,#ffe08a)}
-.card.gold .lv .n{color:#b07600}
-.badge{display:inline-block;background:#e2441f;color:#fff;font-size:30px;font-weight:900;padding:6px 18px;border-radius:12px;margin-left:10px;vertical-align:middle}
-.free{margin-top:34px;border:3px solid #2ee6c5;border-radius:34px;padding:32px 44px;background:rgba(46,230,197,.08)}
-.free h2{font-size:44px;font-weight:900;color:#2ee6c5}
-.free li{list-style:none;font-size:40px;font-weight:800;margin-top:18px;display:flex;align-items:center;gap:18px}
-.free li i{font-style:normal;flex:none;width:52px;height:52px;border-radius:50%;background:#2ee6c5;color:#0f2b3d;display:flex;align-items:center;justify-content:center;font-size:34px}
-.free li b{color:#ffd25a}
-.foot{position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font-size:30px;color:#9fd3ca;font-weight:700}
+body{width:1086px;height:1448px;font-family:"Noto Sans CJK KR","Noto Sans KR",sans-serif;color:#fff;position:relative;overflow:hidden;
+ background:
+  radial-gradient(ellipse at 85% 92%,rgba(255,166,77,.55),transparent 45%),
+  radial-gradient(ellipse at 10% 0%,rgba(46,230,197,.25),transparent 40%),
+  linear-gradient(175deg,#0b1626 0%,#14304a 45%,#2a3f63 70%,#5b4a6b 100%)}
+.speed{position:absolute;left:-10%;width:120%;height:3px;background:linear-gradient(90deg,transparent,rgba(120,220,255,.7),transparent);transform:rotate(-8deg)}
+.city{position:absolute;bottom:0;left:0;right:0;height:300px;
+ background:linear-gradient(0deg,#0b1626 0%,rgba(11,22,38,.0) 100%),
+ repeating-linear-gradient(90deg,rgba(10,18,32,.95) 0 38px,rgba(10,18,32,.0) 38px 52px,rgba(10,18,32,.85) 52px 96px,rgba(10,18,32,0) 96px 120px);
+ -webkit-mask:linear-gradient(0deg,#000 40%,transparent 100%);opacity:.9}
+.wrap{position:relative;padding:44px 48px}
+.top{display:flex;gap:28px}
+.left{flex:1}
+.logo{display:flex;align-items:center;gap:16px}
+.mark{width:104px;height:104px;border-radius:50%;background:#fff;color:#0b1626;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:46px;font-style:italic;border:6px solid #ff3d8b;letter-spacing:-3px}
+.brand b{display:block;font-size:52px;font-weight:900;font-style:italic;letter-spacing:1px;line-height:1}
+.brand small{display:block;font-size:20px;letter-spacing:5px;font-weight:700;color:#bfe9e1;margin-top:6px}
+.brush{position:relative;display:inline-block;padding:10px 36px 14px;margin-top:22px}
+.brush::before{content:"";position:absolute;inset:0;background:#ff1f7a;transform:skew(-8deg) rotate(-2deg);border-radius:6px 22px 8px 26px;
+ box-shadow:14px 6px 0 -4px rgba(255,31,122,.55),-10px -4px 0 -6px rgba(255,31,122,.4)}
+.brush span{position:relative;font-size:112px;font-weight:900;letter-spacing:-3px;text-shadow:0 5px 0 rgba(0,0,0,.25)}
+.chips{margin-top:24px;border:4px solid #7ff0d8;border-radius:22px;background:rgba(10,90,90,.55);box-shadow:0 0 18px rgba(127,240,216,.5);
+ display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+.chips div{padding:16px 6px;text-align:center;font-size:36px;font-weight:900;white-space:nowrap}
+.chips div:nth-child(1),.chips div:nth-child(2){border-bottom:3px solid rgba(255,255,255,.7)}
+.chips div:nth-child(odd){border-right:3px solid rgba(255,255,255,.7)}
+.chips em{font-style:normal;color:#ffe14d}
+.map{width:360px;flex:none;background:#fff;border-radius:18px;padding:14px 14px 10px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.map .ttl{color:#14202a;font-weight:900;font-size:24px;text-align:center;margin-bottom:6px}
+.legend{display:flex;justify-content:space-around;margin-top:8px;color:#14202a;font-size:20px;font-weight:800}
+.legend i{display:inline-block;width:26px;height:20px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+.card{position:relative;margin-top:30px;background:#fff;border-radius:26px;padding:30px 30px 26px;color:#14202a;box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.blk{background:#14202a;color:#fff;font-size:44px;font-weight:900;padding:8px 22px;transform:rotate(-1.5deg);border-radius:6px;letter-spacing:-1px}
+.pk{background:#ff1f7a;color:#fff;font-size:52px;font-weight:900;padding:4px 22px;transform:rotate(-1.5deg);border-radius:6px;letter-spacing:-1px}
+.tiers{display:flex;flex-direction:column;gap:16px;margin-top:24px}
+.tier{display:flex;align-items:stretch;border-radius:12px;overflow:hidden;font-weight:900;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.tier .c{background:#ff1f7a;color:#fff;font-size:44px;padding:12px 22px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tier .c small{font-size:26px}
+.tier .f{background:#eef3f2;flex:1;font-size:30px;padding:12px 20px;display:flex;align-items:center;color:#334}
+.tier .m{background:#ffe14d;font-size:50px;padding:12px 24px;display:flex;align-items:center;white-space:nowrap;letter-spacing:-1px}
+.tier.gold .c{background:#d99a00}
+.tier.gold .m{background:linear-gradient(135deg,#fff3a8,#ffcf2e)}
+.unl{display:inline-block;background:#ff1f7a;color:#fff;font-size:26px;padding:4px 12px;border-radius:8px;margin-left:10px;vertical-align:middle}
+.burst{margin:26px -10px 0;position:relative;text-align:center;padding:16px 0 20px}
+.burst::before{content:"";position:absolute;inset:0;background:#ff1f7a;transform:skew(-10deg) rotate(-1.5deg);border-radius:10px 30px 10px 30px}
+.burst span{position:relative;font-size:56px;font-weight:900;color:#ffe14d;letter-spacing:-1px;text-shadow:3px 3px 0 #14202a,-2px -2px 0 #14202a,2px -2px 0 #14202a,-2px 2px 0 #14202a}
+.burst span b{color:#fff}
+.checks{display:grid;grid-template-columns:1fr;gap:14px;margin-top:26px;padding-top:22px;border-top:3px dashed #d6e4e1}
+.checks div{display:flex;align-items:center;gap:14px;font-size:36px;font-weight:900}
+.checks i{flex:none;width:46px;height:46px;border-radius:50%;background:#1aa37a;color:#fff;font-style:normal;display:flex;align-items:center;justify-content:center;font-size:30px}
+.checks em{font-style:normal;color:#ff1f7a}
+.foot{position:absolute;left:48px;right:48px;bottom:46px;text-align:right}
+.foot .s1{font-size:58px;font-weight:900;font-style:italic;color:#ffe14d;text-shadow:3px 3px 0 #14202a;transform:rotate(-4deg);display:inline-block}
+.foot .s2{margin-top:12px;font-size:26px;font-weight:800;color:#fff}
+.foot .tag{display:inline-block;margin-top:14px;position:relative;padding:8px 30px}
+.foot .tag::before{content:"";position:absolute;inset:0;background:#2ee6c5;transform:skew(-12deg) rotate(-3deg);border-radius:6px}
+.foot .tag span{position:relative;font-size:56px;font-weight:900;font-style:italic;color:#fff;text-shadow:3px 3px 0 #14202a}
 </style></head><body>
-<div class="glow g1"></div><div class="glow g2"></div>
+<div class="speed" style="top:610px"></div><div class="speed" style="top:640px;opacity:.5"></div><div class="speed" style="top:1180px"></div><div class="speed" style="top:1215px;opacity:.6"></div>
+<div class="city"></div>
 <div class="wrap">
- <span class="tag">배민플러스 · 살뜰 과천B</span>
- <h1>과천B <em>프로모션</em></h1>
- <p class="sub">많이 탈수록 건당 단가가 올라갑니다</p>
- <div class="cards">
-  <div class="card">
-   <div class="lv"><div class="n">101<small>건</small></div><div class="t">달성 시</div></div>
-   <div class="bd"><div class="a">101건째부터 추가 지급</div><div class="b">건당 <span class="won">+1,000원</span></div></div>
+ <div class="top">
+  <div class="left">
+   <div class="logo"><div class="mark">SD</div><div class="brand"><b>SALDDEUL</b><small>배민플러스 · 살뜰</small></div></div>
+   <div class="brush"><span>과천 B</span></div>
+   <div class="chips">
+    <div>101건~ <em>+1,000</em></div><div>250건~ <em>+1,300</em></div>
+    <div>권역외 <em>거절OK</em></div><div>0~9시 <em>거절OK</em></div>
+   </div>
   </div>
-  <div class="card gold">
-   <div class="lv"><div class="n">250<small>건</small></div><div class="t">달성 시</div></div>
-   <div class="bd"><div class="a">101건째부터 추가 지급</div><div class="b">건당 <span class="won">+1,300원</span><span class="badge">무제한</span></div></div>
-  </div>
+  <div class="map"><div class="ttl">과천B 권역</div><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 352" width="330" height="352">
+<path d="M32.5,0.0 L48.2,9.9 L58.2,23.6 L55.9,32.5 L61.4,44.8 L67.8,46.5 L72.7,37.8 L86.9,39.7 L95.0,34.6 L100.4,32.1 L111.7,32.7 L118.1,28.6 L128.9,31.7 L145.1,28.6 L148.1,23.2 L160.5,22.9 L163.7,20.6 L164.9,11.8 L163.8,4.2 L164.3,0.0 L330.0,0.0 L330.0,352.2 L92.1,352.2 L82.4,343.4 L70.3,337.5 L71.8,349.7 L69.3,352.2 L60.2,352.2 L37.6,346.0 L13.9,345.2 L0.0,347.8 L0.0,0.0 L32.5,0.0Z " fill="#9aa3a8" stroke="#6c757a" stroke-width="1.5"/>
+<path d="M151.9,96.4 L155.7,92.0 L158.9,70.4 L165.4,68.8 L173.2,89.0 L191.4,103.0 L196.6,114.2 L193.5,115.8 L197.1,119.5 L199.1,120.5 L203.4,120.8 L208.9,116.4 L220.6,110.8 L232.3,112.0 L259.5,109.3 L266.7,107.5 L267.8,97.8 L295.9,117.8 L284.0,135.4 L282.3,136.4 L277.4,137.5 L275.8,138.9 L261.7,139.9 L257.6,141.2 L247.5,152.4 L243.9,149.1 L243.3,147.3 L241.9,147.1 L240.9,148.5 L237.3,150.9 L236.7,148.4 L237.4,143.8 L234.1,144.2 L231.7,150.8 L229.0,150.0 L226.9,150.4 L225.0,149.4 L224.5,148.6 L225.1,144.4 L226.2,142.2 L226.2,137.5 L219.2,137.1 L218.4,136.2 L218.7,134.4 L215.1,133.7 L206.1,136.2 L203.8,138.9 L191.9,146.3 L182.2,140.7 L172.6,136.5 L164.0,131.3 L158.9,121.9 L157.1,114.6 L155.5,103.9 L151.9,96.4Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M191.9,146.3 L203.8,138.9 L206.1,136.2 L215.1,133.7 L218.8,134.4 L218.4,136.2 L219.2,137.1 L226.2,137.5 L226.2,142.2 L225.1,144.4 L224.5,148.6 L225.0,149.4 L226.9,150.4 L229.0,150.0 L231.7,150.8 L234.1,144.2 L237.4,143.8 L236.7,148.4 L237.4,150.8 L240.9,148.5 L241.9,147.0 L243.4,147.3 L244.0,149.1 L247.5,152.4 L257.6,141.2 L261.7,139.9 L275.8,138.9 L278.3,140.2 L276.1,144.8 L275.0,150.3 L275.5,163.7 L273.2,165.5 L272.3,168.5 L283.7,180.4 L287.4,178.3 L292.1,180.8 L293.7,183.2 L313.8,200.7 L312.6,203.7 L309.8,206.4 L290.3,203.8 L280.9,195.7 L278.1,190.7 L269.6,188.8 L263.1,189.4 L260.0,190.8 L252.9,196.0 L243.6,219.1 L239.9,226.7 L237.3,220.8 L232.8,215.7 L231.3,214.6 L223.5,213.8 L222.4,212.9 L213.8,198.8 L212.3,193.5 L211.1,182.9 L212.2,178.2 L210.2,165.4 L204.1,153.3 L191.9,146.3Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M148.2,220.3 L154.6,221.1 L165.5,220.1 L168.4,218.9 L166.4,207.6 L194.6,205.2 L197.0,205.6 L200.6,207.5 L215.2,218.3 L223.5,213.8 L231.3,214.6 L237.3,220.8 L240.3,228.4 L238.3,236.2 L235.7,240.3 L233.0,242.1 L227.4,251.3 L220.2,248.4 L215.7,247.5 L204.5,248.4 L204.3,255.1 L206.1,262.2 L207.0,269.6 L206.0,273.0 L193.2,278.0 L191.7,277.9 L186.5,277.3 L184.0,250.9 L164.7,253.1 L150.3,225.7 L148.2,220.3Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M119.0,182.4 L123.3,172.1 L139.8,156.8 L144.7,146.3 L147.0,136.7 L139.6,105.5 L142.7,102.2 L143.3,92.9 L146.7,85.8 L153.6,79.8 L157.4,81.1 L155.7,92.0 L151.9,96.4 L155.5,103.9 L157.1,114.7 L159.7,123.6 L164.5,131.8 L172.6,136.6 L182.2,140.7 L204.1,153.3 L210.2,165.4 L212.2,178.2 L211.1,183.0 L212.3,193.5 L213.8,198.8 L222.0,212.4 L223.5,213.8 L215.2,218.4 L200.6,207.5 L196.9,205.6 L194.5,205.2 L170.8,207.0 L166.5,207.7 L168.5,218.9 L166.2,219.9 L153.9,221.1 L139.7,219.0 L137.9,219.2 L123.9,225.2 L120.5,210.7 L119.2,200.0 L118.3,188.5 L119.0,182.4Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M186.5,277.3 L193.2,278.0 L206.0,273.0 L207.0,269.6 L206.1,262.2 L204.3,255.1 L204.5,248.4 L215.7,247.5 L220.2,248.4 L227.4,251.3 L236.9,259.1 L233.5,265.2 L227.2,267.7 L224.9,269.5 L223.0,272.9 L205.7,289.5 L200.7,298.3 L200.6,296.0 L187.7,290.4 L186.5,277.3Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M132.9,278.9 L169.1,263.0 L164.7,253.1 L184.0,250.8 L187.7,290.4 L145.0,307.2 L132.9,278.9Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M145.0,307.2 L187.7,290.4 L200.6,296.0 L197.9,326.6 L194.7,331.7 L180.3,325.5 L173.0,321.2 L165.5,322.6 L154.2,328.6 L145.0,307.2Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M110.2,226.5 L123.9,225.2 L137.9,219.2 L148.2,220.3 L150.3,225.7 L164.9,253.5 L169.1,263.0 L132.9,278.9 L110.2,226.5Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M16.2,192.4 L17.3,184.7 L23.9,161.4 L38.8,159.3 L47.6,161.7 L52.9,160.6 L74.3,132.1 L96.9,120.4 L92.6,118.6 L99.5,115.5 L100.0,87.1 L103.2,76.6 L100.7,71.0 L102.9,65.8 L99.0,47.4 L100.4,32.1 L111.7,32.6 L118.1,28.6 L128.9,31.7 L145.1,28.6 L148.1,23.2 L160.5,22.9 L163.7,20.6 L170.4,22.9 L168.4,28.9 L168.7,31.3 L165.7,36.7 L165.4,68.8 L159.0,70.5 L157.4,81.1 L153.6,79.8 L146.7,85.8 L143.3,92.9 L142.7,102.3 L139.6,105.5 L147.0,136.7 L144.7,146.3 L139.8,156.8 L123.3,172.1 L119.0,182.4 L118.3,188.5 L119.2,200.0 L120.5,210.7 L123.9,225.2 L110.2,226.5 L89.0,237.4 L66.8,253.1 L83.3,269.2 L72.4,272.2 L70.3,270.5 L65.8,263.6 L57.5,257.7 L32.4,243.4 L24.5,233.1 L17.6,225.9 L19.2,204.8 L16.2,192.4Z " fill="#ff4f9a" stroke="#14202a" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="175.6" y="110.0" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">원문동</text>
+<text x="247.3" y="179.3" font-size="14" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">갈현동</text>
+<text x="196.4" y="241.2" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">인덕원동</text>
+<text x="170.6" y="149.8" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">관양동</text>
+<text x="215.2" y="271.3" font-size="12" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">평촌동</text>
+<text x="161.3" y="284.6" font-size="11" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">평안동</text>
+<text x="173.5" y="314.2" font-size="11" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">귀인동</text>
+<text x="136.9" y="240.0" font-size="11" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">부림동</text>
+<text x="101.0" y="151.6" font-size="15" font-weight="900" fill="#fff" text-anchor="middle" dominant-baseline="middle" paint-order="stroke" stroke="#14202a" stroke-width="3">비산동</text>
+</svg>
+   <div class="legend"><span><i style="background:#ff4f9a"></i>권역</span><span><i style="background:#9aa3a8"></i>권역 외</span></div></div>
  </div>
- <div class="free">
-  <h2>콜 거절 자유</h2>
-  <ul>
-   <li><i>✓</i><span>권역 외 콜 <b>무제한 거절 가능</b></span></li>
-   <li><i>✓</i><span>밤 12시 ~ 오전 9시 콜 <b>무제한 거절 가능</b></span></li>
-  </ul>
+ <div class="card">
+  <div class="head"><span class="blk">과천B 프로모션</span><span class="pk">101건째부터 추가 지급</span></div>
+  <div class="tiers">
+   <div class="tier"><div class="c">101건<small>달성 시</small></div><div class="f">101건째부터 건당</div><div class="m">+1,000원</div></div>
+   <div class="tier gold"><div class="c">250건<small>달성 시</small></div><div class="f">101건째부터 건당</div><div class="m">+1,300원<span class="unl">무제한</span></div></div>
+  </div>
+    <div class="checks">
+   <div><i>✓</i><span>권역 외 콜 <em>무제한 거절 가능</em></span></div>
+   <div><i>✓</i><span>밤 12시 ~ 오전 9시 콜 <em>무제한 거절 가능</em></span></div>
+  </div>
  </div>
 </div>
-<div class="foot"><span>배민플러스 살뜰 과천B</span><span>PROMOTION</span></div>
+<div class="foot">
+ <div class="s1">과천에서 함께 달려요!</div>
+ <div class="s2">많이 탈수록 건당 단가가 올라갑니다</div>
+ <div class="tag"><span>SALDDEUL 과천B</span></div>
+</div>
 </body></html>

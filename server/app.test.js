@@ -22,6 +22,7 @@ async function startServer(backend) {
   if (backend === 'postgres') await store.pool.query('DELETE FROM toilets');
   const app = createApp({
     accessCode: '4821',
+    viewCode: '0000',
     sessionSecret: 'test-secret',
     naverClientId: 'test-client',
     secureCookie: false,
@@ -79,7 +80,7 @@ for (const backend of BACKENDS) {
     const { server, call } = await startServer(backend);
     try {
       for (let i = 0; i < 5; i++) {
-        assert.strictEqual((await call('POST', '/api/login', { code: '0000' })).status, 401);
+        assert.strictEqual((await call('POST', '/api/login', { code: '1111' })).status, 401);
       }
       assert.strictEqual((await call('POST', '/api/login', { code: '4821' })).status, 429);
     } finally {
@@ -133,6 +134,31 @@ for (const backend of BACKENDS) {
       assert.strictEqual(noName.body.toilet.name, '화장실');
       const cleared = await call('PUT', `/api/toilets/${noName.body.toilet.id}`, { name: '' });
       assert.strictEqual(cleared.body.toilet.name, '화장실');
+    } finally {
+      server.close();
+    }
+  });
+
+  test(`[${backend}] 보기 전용 코드: 조회만 가능, 등록/수정/삭제 불가`, async () => {
+    const { server, call } = await startServer(backend);
+    try {
+      // 편집 코드로 하나 등록
+      const login = await call('POST', '/api/login', { code: '4821' });
+      assert.strictEqual(login.body.canEdit, true);
+      assert.strictEqual((await call('GET', '/api/session')).body.canEdit, true);
+      const id = (await call('POST', '/api/toilets', sample)).body.toilet.id;
+      // 보기 코드로 다시 접속
+      const view = await call('POST', '/api/login', { code: '0000' });
+      assert.strictEqual(view.status, 200);
+      assert.strictEqual(view.body.canEdit, false);
+      const session = (await call('GET', '/api/session')).body;
+      assert.deepStrictEqual(session, { authed: true, canEdit: false });
+      assert.strictEqual((await call('GET', '/api/toilets')).body.toilets.length, 1);
+      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
+      assert.strictEqual((await call('POST', '/api/toilets', sample)).status, 403);
+      assert.strictEqual((await call('PUT', `/api/toilets/${id}`, { rating: 5 })).status, 403);
+      assert.strictEqual((await call('DELETE', `/api/toilets/${id}`)).status, 403);
+      assert.strictEqual((await call('GET', '/api/toilets')).body.toilets[0].rating, 3);
     } finally {
       server.close();
     }

@@ -15,6 +15,14 @@ if (!/^\d{4}$/.test(accessCode)) {
   process.exit(1);
 }
 
+// 보기 전용 코드는 0000 (VIEW_CODE 로 변경, VIEW_CODE=off 면 보기 전용 접속 끔)
+const DEFAULT_VIEW_CODE = '0000';
+const viewCode = env.VIEW_CODE === 'off' ? '' : env.VIEW_CODE || DEFAULT_VIEW_CODE;
+if (viewCode && (!/^\d{4}$/.test(viewCode) || viewCode === accessCode)) {
+  console.error('VIEW_CODE 는 ACCESS_CODE 와 다른 4자리 숫자여야 합니다. (예: VIEW_CODE=0000)');
+  process.exit(1);
+}
+
 if (!env.NAVER_MAP_CLIENT_ID) {
   console.warn('경고: NAVER_MAP_CLIENT_ID 가 비어 있어 지도가 표시되지 않습니다.');
 }
@@ -32,6 +40,7 @@ const store = createStore({
 
 const config = {
   accessCode,
+  viewCode,
   sessionSecret,
   naverClientId: env.NAVER_MAP_CLIENT_ID || '',
   // 카카오 애드핏 광고 단위 ID (예: DAN-xxxxxxxx). 비워두면 광고 없음

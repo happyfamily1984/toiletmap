@@ -321,3 +321,5 @@ input, textarea { font: inherit; }
   box-shadow: var(--shadow);
 }
 .join-btn:active { background: #1fa5a0; }
+
+.view-only { color: var(--muted); font-size: 14px; text-align: center; margin: 4px 0 0; }

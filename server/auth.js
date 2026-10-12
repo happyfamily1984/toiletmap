@@ -28,28 +28,38 @@ function parseCookies(header) {
 
 /**
  * 4자리 접속 코드 + 서명된 세션 쿠키.
- * 접속 코드를 바꾸면 기존 세션은 모두 무효가 된다(서명에 코드가 포함됨).
+ * - accessCode(편집 코드): 보기 + 화장실 등록/수정/삭제
+ * - viewCode(보기 코드): 보기만 가능 (없으면 보기 전용 접속 없음)
+ * 코드를 바꾸면 그 코드로 받은 기존 세션은 무효가 된다(서명에 코드가 포함됨).
  */
-function createAuth({ accessCode, secret, secureCookie }) {
-  const signingKey = `${secret}:${accessCode}`;
+function createAuth({ accessCode, viewCode, secret, secureCookie }) {
+  const ROLES = { edit: accessCode };
+  if (viewCode) ROLES.view = viewCode;
+  const keyFor = (role) => `${secret}:${role}:${ROLES[role]}`;
+  // 예전(역할 구분 전) 세션 쿠키는 편집 코드로만 발급됐으므로 편집 권한으로 인정
+  const legacyKey = `${secret}:${accessCode}`;
 
   // 무차별 대입 방지: IP 당 실패 5회 → 10분 잠금
   const MAX_FAILS = 5;
   const LOCK_MS = 10 * 60 * 1000;
   const attempts = new Map();
 
-  function issueToken() {
+  function issueToken(role) {
     const exp = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
-    const payload = String(exp);
-    return `${payload}.${sign(payload, signingKey)}`;
+    const payload = `${exp}~${role}`;
+    return `${payload}.${sign(payload, keyFor(role))}`;
   }
 
-  function verifyToken(token) {
-    if (!token) return false;
+  /** 유효하면 'edit' | 'view', 아니면 null */
+  function roleOf(token) {
+    if (!token) return null;
     const [payload, sig] = token.split('.');
-    if (!payload || !sig) return false;
-    if (!safeEqual(sig, sign(payload, signingKey))) return false;
-    return Number(payload) > Date.now();
+    if (!payload || !sig) return null;
+    const [exp, role] = payload.split('~');
+    if (!(Number(exp) > Date.now())) return null;
+    if (role === undefined) return safeEqual(sig, sign(payload, legacyKey)) ? 'edit' : null;
+    if (!Object.prototype.hasOwnProperty.call(ROLES, role)) return null;
+    return safeEqual(sig, sign(payload, keyFor(role))) ? role : null;
   }
 
   function cookieHeader(value, maxAgeSec) {
@@ -64,8 +74,16 @@ function createAuth({ accessCode, secret, secureCookie }) {
     return parts.join('; ');
   }
 
+  function roleFromReq(req) {
+    return roleOf(parseCookies(req.headers.cookie)[COOKIE_NAME]);
+  }
+
   function isAuthed(req) {
-    return verifyToken(parseCookies(req.headers.cookie)[COOKIE_NAME]);
+    return roleFromReq(req) !== null;
+  }
+
+  function canEdit(req) {
+    return roleFromReq(req) === 'edit';
   }
 
   function login(req, res) {
@@ -79,7 +97,10 @@ function createAuth({ accessCode, secret, secureCookie }) {
     }
 
     const code = String((req.body && req.body.code) || '');
-    if (!/^\d{4}$/.test(code) || !safeEqual(code, accessCode)) {
+    const role = /^\d{4}$/.test(code)
+      ? Object.keys(ROLES).find((r) => safeEqual(code, ROLES[r]))
+      : undefined;
+    if (!role) {
       rec.fails += 1;
       if (rec.fails >= MAX_FAILS) {
         rec.fails = 0;
@@ -90,8 +111,8 @@ function createAuth({ accessCode, secret, secureCookie }) {
     }
 
     attempts.delete(ip);
-    res.setHeader('Set-Cookie', cookieHeader(issueToken(), SESSION_DAYS * 24 * 60 * 60));
-    return res.json({ ok: true });
+    res.setHeader('Set-Cookie', cookieHeader(issueToken(role), SESSION_DAYS * 24 * 60 * 60));
+    return res.json({ ok: true, canEdit: role === 'edit' });
   }
 
   function logout(req, res) {
@@ -104,7 +125,14 @@ function createAuth({ accessCode, secret, secureCookie }) {
     return res.status(401).json({ error: '접속 코드를 먼저 입력해 주세요.' });
   }
 
-  return { login, logout, requireAuth, isAuthed };
+  function requireEditor(req, res, next) {
+    const role = roleFromReq(req);
+    if (role === 'edit') return next();
+    if (role) return res.status(403).json({ error: '보기 전용 접속입니다. 등록·수정은 편집 코드로 접속해 주세요.' });
+    return res.status(401).json({ error: '접속 코드를 먼저 입력해 주세요.' });
+  }
+
+  return { login, logout, requireAuth, requireEditor, isAuthed, canEdit };
 }
 
 module.exports = { createAuth };

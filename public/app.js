@@ -26,6 +26,7 @@
     filter: 'all',     // 별점 필터: 'all' 또는 1~5
     labelMode: false,
     addMode: false,
+    canEdit: false,    // 편집 코드(6511)로 접속했을 때만 true. 보기 코드(0000)는 false
   };
 
   // ---------------- 공통 ----------------
@@ -102,10 +103,10 @@
   function submitPin() {
     loginBusy = true;
     api('POST', '/api/login', { code: pin })
-      .then(function () {
+      .then(function (data) {
         pin = '';
         renderPin();
-        showMain();
+        showMain(!!data.canEdit);
       })
       .catch(function (err) {
         pin = '';
@@ -442,10 +443,12 @@
       '<p class="desc' + (t.description ? '' : ' none') + '">' +
         escapeHtml(t.description || '설명이 없습니다.') + '</p>' +
       '<p class="meta">최근 수정 ' + escapeHtml(formatDate(t.updatedAt)) + '</p>' +
-      '<div class="actions">' +
-        '<button type="button" class="btn danger" data-act="delete">삭제</button>' +
-        '<button type="button" class="btn primary" data-act="edit">수정</button>' +
-      '</div>'
+      (state.canEdit
+        ? '<div class="actions">' +
+            '<button type="button" class="btn danger" data-act="delete">삭제</button>' +
+            '<button type="button" class="btn primary" data-act="edit">수정</button>' +
+          '</div>'
+        : '<p class="view-only">보기 전용 접속이라 수정할 수 없어요</p>')
     );
     $('sheet-body').onclick = function (e) {
       var btn = e.target.closest('button[data-act]');
@@ -749,7 +752,21 @@
   }
 
   var mapReady = null;
-  function showMain() {
+  // 편집 권한에 따라 등록 버튼과 안내 문구를 바꾼다
+  function applyRole(canEdit) {
+    state.canEdit = canEdit;
+    $('add-btn').hidden = !canEdit;
+    if (!canEdit && state.addMode) setAddMode(false);
+    var hint = $('hint');
+    if (!state.addMode) {
+      hint.textContent = canEdit
+        ? '＋ 화장실 등록 버튼을 눌러 화장실을 추가할 수 있어요'
+        : '보기 전용으로 접속했어요';
+    }
+  }
+
+  function showMain(canEdit) {
+    applyRole(!!canEdit);
     $('login').hidden = true;
     $('main').hidden = false;
     showAd();
@@ -783,7 +800,7 @@
           fatal('서버에 NAVER_MAP_CLIENT_ID 가 설정되지 않았습니다.');
           return;
         }
-        if (r[1].authed) showMain(); else showLogin();
+        if (r[1].authed) showMain(r[1].canEdit); else showLogin();
       })
       .catch(function () {
         fatal('서버에 연결할 수 없습니다.<br>인터넷 연결을 확인해 주세요.');

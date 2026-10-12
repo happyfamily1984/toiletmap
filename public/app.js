@@ -20,9 +20,9 @@
     markers: {},
     tempMarker: null,
     myMarker: null,
-    zone: null,        // 살뜰 권역 데이터 (zone.json)
+    zones: null,       // 권역 데이터 (zones.json)
     zoneShapes: [],    // 지도에 그린 권역 폴리곤
-    zoneOn: false,
+    activeZone: null,  // 'salddeul' | 'finish' | null
     filter: 'all',     // 별점 필터: 'all' 또는 1~5
     labelMode: false,
     addMode: false,
@@ -586,27 +586,32 @@
     return false;
   };
 
-  // ---------------- 살뜰 권역 ----------------
-  var ZONE_KEY = 'toiletmap.zoneOn';
+  // ---------------- 권역 (살뜰 / 피니시) ----------------
+  // 한 번에 하나의 권역만 표시. 같은 버튼을 다시 누르면 해제.
+  var ZONE_KEY = 'toiletmap.zone';
+  var ZONE_BTNS = { salddeul: 'zone-btn', finish: 'finish-btn' };
 
-  function loadZone() {
-    if (state.zone) return Promise.resolve(state.zone);
-    return fetch('/zone.json').then(function (r) { return r.json(); }).then(function (z) {
-      state.zone = z;
-      return z;
+  function loadZones() {
+    if (state.zones) return Promise.resolve(state.zones);
+    return fetch('/zones.json').then(function (r) { return r.json(); }).then(function (z) {
+      state.zones = z.zones;
+      return state.zones;
     });
   }
 
   // 권역 전체를 하나의 영역으로 표시 (동별 구분 없음)
-  function drawZone(z) {
+  function drawZone(zone) {
     var nm = naver.maps;
-    z.polygons.forEach(function (ring) {
+    // polygon = [외곽선, 구멍1, 구멍2 ...] (권역 안에 빠진 동은 구멍으로 비워 둠)
+    zone.polygons.forEach(function (polygon) {
       state.zoneShapes.push(new nm.Polygon({
         map: state.map,
-        paths: [ring.map(function (p) { return new nm.LatLng(p[0], p[1]); })],
-        fillColor: '#ff5fa2',
+        paths: polygon.map(function (ring) {
+          return ring.map(function (p) { return new nm.LatLng(p[0], p[1]); });
+        }),
+        fillColor: zone.color,
         fillOpacity: 0.18,
-        strokeColor: '#ff3d8b',
+        strokeColor: zone.stroke,
         strokeOpacity: 0.7,
         strokeWeight: 2,
         clickable: false, // 등록 모드에서 지도 클릭이 그대로 통하도록
@@ -615,10 +620,10 @@
     });
   }
 
-  function zoneBounds(z) {
+  function zoneBounds(zone) {
     var minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-    z.polygons.forEach(function (ring) {
-      ring.forEach(function (p) {
+    zone.polygons.forEach(function (polygon) {
+      polygon[0].forEach(function (p) {
         minLat = Math.min(minLat, p[0]); maxLat = Math.max(maxLat, p[0]);
         minLng = Math.min(minLng, p[1]); maxLng = Math.max(maxLng, p[1]);
       });
@@ -629,20 +634,36 @@
     );
   }
 
-  function setZone(on, fit) {
-    state.zoneOn = on;
-    $('zone-btn').classList.toggle('active', on);
-    try { localStorage.setItem(ZONE_KEY, on ? '1' : '0'); } catch (e) { /* 저장 안 돼도 무관 */ }
-    if (!on) {
-      state.zoneShapes.forEach(function (s) { s.setMap(null); });
-      state.zoneShapes = [];
-      return;
-    }
-    loadZone().then(function (z) {
-      if (!state.zoneOn || state.zoneShapes.length) return;
-      drawZone(z);
-      if (fit) state.map.fitBounds(zoneBounds(z), { top: 70, right: 20, bottom: 90, left: 20 });
+  function clearZoneShapes() {
+    state.zoneShapes.forEach(function (s) { s.setMap(null); });
+    state.zoneShapes = [];
+  }
+
+  // key: 'salddeul' | 'finish' | null(해제)
+  function setZone(key, fit) {
+    state.activeZone = key;
+    Object.keys(ZONE_BTNS).forEach(function (k) {
+      $(ZONE_BTNS[k]).classList.toggle('active', k === key);
+    });
+    try { localStorage.setItem(ZONE_KEY, key || ''); } catch (e) { /* 저장 안 돼도 무관 */ }
+    clearZoneShapes();
+    if (!key) return;
+    loadZones().then(function (zones) {
+      if (state.activeZone !== key || !zones[key]) return; // 그 사이 다른 권역으로 바뀜
+      clearZoneShapes();
+      drawZone(zones[key]);
+      if (fit) state.map.fitBounds(zoneBounds(zones[key]), { top: 70, right: 20, bottom: 90, left: 20 });
     }).catch(function () { toast('권역 정보를 불러오지 못했어요'); });
+  }
+
+  function savedZone() {
+    var v = null;
+    try {
+      v = localStorage.getItem(ZONE_KEY);
+      // 예전 버전(살뜰 권역 켜기/끄기) 저장값 이어받기
+      if (v === null && localStorage.getItem('toiletmap.zoneOn') === '1') v = 'salddeul';
+    } catch (e) { /* 무시 */ }
+    return ZONE_BTNS[v] ? v : null;
   }
 
   function setupMainUi() {
@@ -657,8 +678,9 @@
     try { savedFilter = localStorage.getItem(FILTER_KEY); } catch (e) { /* 무시 */ }
     setFilter(/^[1-5]$/.test(savedFilter || '') ? Number(savedFilter) : 'all', false);
     // 프로모션 전단지
-    $('promo-btn').addEventListener('click', function () {
-      var btn = $('promo-btn');
+    document.querySelector('.promo-row').addEventListener('click', function (e) {
+      var btn = e.target.closest('.promo-btn');
+      if (!btn) return;
       var img = $('promo-img');
       img.alt = btn.getAttribute('data-title');
       img.src = '/api/promo/' + btn.getAttribute('data-promo');
@@ -674,8 +696,10 @@
         toast('전단지를 불러오지 못했어요');
       }
     });
-    $('zone-btn').addEventListener('click', function () {
-      if (state.map) setZone(!state.zoneOn, true);
+    Object.keys(ZONE_BTNS).forEach(function (k) {
+      $(ZONE_BTNS[k]).addEventListener('click', function () {
+        if (state.map) setZone(state.activeZone === k ? null : k, true);
+      });
     });
     $('add-btn').addEventListener('click', function () {
       if (state.map) setAddMode(!state.addMode);
@@ -731,9 +755,8 @@
     showAd();
     if (!mapReady) {
       mapReady = loadNaverMaps(state.config.naverClientId).then(initMap).then(function () {
-        var saved = null;
-        try { saved = localStorage.getItem(ZONE_KEY); } catch (e) { /* 무시 */ }
-        if (saved === '1') setZone(true, false);
+        var saved = savedZone();
+        if (saved) setZone(saved, false);
       });
     }
     mapReady

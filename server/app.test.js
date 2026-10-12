@@ -93,6 +93,7 @@ for (const backend of BACKENDS) {
       assert.strictEqual((await call('POST', '/api/login', { code: '4821' })).status, 200);
       assert.strictEqual((await call('GET', '/api/session')).body.authed, true);
       assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
+      assert.strictEqual((await call('GET', '/api/promo/dongan-a.jpg')).status, 200);
       assert.strictEqual((await call('GET', '/api/promo/..%2Fapp.js')).status, 404);
       assert.strictEqual((await call('GET', '/api/promo/none.jpg')).status, 404);
 

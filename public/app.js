@@ -911,6 +911,7 @@
     if (!$('sheet').hidden) { closeSheet(); return true; }
     if (state.addMode) { setAddMode(false); return true; }
     if (!$('menu').hidden) { $('menu').hidden = true; return true; }
+    if (!$('bm-panel').hidden) { $('bm-btn').click(); return true; }
     return false;
   };
 
@@ -999,13 +1000,20 @@
     $('join-btn').addEventListener('click', showApplyForm);
     $('near-btn').addEventListener('click', nearby);
     // 프로모션 전단지
-    document.querySelector('.promo-row').addEventListener('click', function (e) {
+    $('bm-panel').addEventListener('click', function (e) {
       var btn = e.target.closest('.promo-btn');
       if (!btn) return;
       var img = $('promo-img');
       img.alt = btn.getAttribute('data-title');
       img.src = '/api/promo/' + btn.getAttribute('data-promo');
       $('promo').hidden = false;
+    });
+    // 배민플러스: 권역·프로모션 버튼 4개 열기/닫기 (처음엔 닫힘)
+    $('bm-btn').addEventListener('click', function () {
+      var open = $('bm-panel').hidden;
+      $('bm-panel').hidden = !open;
+      $('bm-btn').classList.toggle('open', open);
+      $('bm-btn').setAttribute('aria-expanded', String(open));
     });
     $('promo').addEventListener('click', function (e) {
       // 바깥 영역이나 ✕ 를 누르면 닫기

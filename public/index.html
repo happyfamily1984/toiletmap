@@ -48,11 +48,7 @@
     <div id="map" class="map"></div>
 
     <header class="topbar">
-      <div class="zone-btns">
-        <button id="zone-btn" class="zone-btn" type="button">과천B 권역</button>
-        <button id="finish-btn" class="zone-btn finish" type="button">동안A 권역</button>
-        <button id="near-btn" class="near-btn" type="button">📍 내 근처</button>
-      </div>
+      <button id="near-btn" class="near-btn" type="button" aria-label="내 근처 화장실"><span>📍</span>내 근처</button>
       <button id="menu-btn" class="icon-btn" type="button" aria-label="메뉴">☰</button>
       <div id="menu" class="menu" hidden>
         <div class="menu-title">안양 과천 화장실맵</div>
@@ -71,6 +67,11 @@
     <button id="join-btn" class="join-btn" type="button">가입신청</button>
 
     <div class="fabs">
+      <!-- 권역 표시 (과천B 남색 / 동안A 분홍, 한 번에 하나만) -->
+      <div class="promo-row">
+        <button id="zone-btn" class="zone-btn" type="button" aria-label="과천B 권역 보기">과천B<small>권역</small></button>
+        <button id="finish-btn" class="zone-btn finish" type="button" aria-label="동안A 권역 보기">동안A<small>권역</small></button>
+      </div>
       <div class="promo-row">
         <button type="button" class="promo-btn" data-promo="gwacheon-b.jpg?v=3" data-title="배민플러스 살뜰 과천B 프로모션">과천B<small>프로모션</small></button>
         <button type="button" class="promo-btn finish" data-promo="dongan-a.jpg?v=2" data-title="배민플러스 피니시 동안A 프로모션">동안A<small>프로모션</small></button>

@@ -21,7 +21,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 
 /**
- * 살뜰 화장실맵 모바일 웹페이지를 바로 열어주는 앱.
+ * 안양 과천 화장실맵 모바일 웹페이지를 바로 열어주는 앱.
  * 실제 기능(지도, 접속 코드, 화장실 등록)은 모두 웹페이지에 있다.
  */
 class MainActivity : Activity() {
@@ -164,7 +164,7 @@ class MainActivity : Activity() {
               a{display:inline-block;margin-top:16px;padding:12px 24px;border-radius:12px;
                 background:#1f9d6b;color:#fff;text-decoration:none;font-weight:bold}
             </style></head>
-            <body><div><h2>살뜰 화장실맵</h2><p>서버에 연결할 수 없습니다.<br>인터넷 연결을 확인해 주세요.</p>
+            <body><div><h2>안양 과천 화장실맵</h2><p>서버에 연결할 수 없습니다.<br>인터넷 연결을 확인해 주세요.</p>
             <a href="$homeUrl">다시 시도</a></div></body></html>
         """.trimIndent()
         webView.loadDataWithBaseURL(homeUrl, html, "text/html", "utf-8", null)

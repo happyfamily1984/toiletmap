@@ -66,6 +66,6 @@ jobs:
         run: |
           gh release create "v1.0.${{ github.run_number }}" salddeul-toiletmap.apk \
             --repo "${{ github.repository }}" \
-            --title "살뜰 화장실맵 v1.0.${{ github.run_number }}" \
+            --title "안양 과천 화장실맵 v1.0.${{ github.run_number }}" \
             --notes "안드로이드 앱 (서버 주소: ${{ vars.WEB_URL }})" \
             --latest

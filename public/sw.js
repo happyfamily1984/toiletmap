@@ -1,5 +1,5 @@
-// 살뜰 화장실맵 서비스워커: 앱 설치(홈 화면 추가)용, 화면 파일만 네트워크 우선 캐시
-const CACHE = 'toiletmap-v1';
+// 안양 과천 화장실맵 서비스워커: 앱 설치(홈 화면 추가)용, 화면 파일만 네트워크 우선 캐시
+const CACHE = 'toiletmap-v2';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {

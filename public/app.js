@@ -701,12 +701,71 @@
   }
 
   function getPosition(onOk, quiet) {
-    if (!navigator.geolocation) return quiet ? null : toast('위치 기능을 사용할 수 없어요');
+    if (!navigator.geolocation) return quiet ? null : locationHelp(0, onOk);
     navigator.geolocation.getCurrentPosition(function (pos) {
       onOk(pos.coords.latitude, pos.coords.longitude);
-    }, function () {
-      if (!quiet) toast('위치 권한을 허용해 주세요');
+    }, function (err) {
+      if (!quiet) locationHelp(err && err.code, onOk);
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  }
+
+  // 위치를 못 가져왔을 때 이유별 해결 방법 안내
+  // (브라우저는 한 번 거부하면 다시 묻지 않으므로 사이트 설정에서 직접 허용해야 함)
+  var APK_URL = 'https://github.com/happyfamily1984/toiletmap/releases/latest/download/salddeul-toiletmap.apk';
+
+  function locationHelp(code, retry) {
+    var ua = navigator.userAgent || '';
+    var android = /Android/i.test(ua);
+    var kakao = /KAKAOTALK/i.test(ua);
+    var inApp = kakao || /NAVER\(inapp|Instagram|FBAN|FBAV|Line\/|DaumApps|Telegram|everytimeApp/i.test(ua);
+    var ourApp = android && /; wv\)/.test(ua) && !inApp; // 안양 과천 화장실맵 안드로이드 앱
+    var title, body = '', extra = '';
+
+    if (code === 2) {
+      title = '휴대폰 위치(GPS)가 꺼져 있어요';
+      body = '<p>화면 위쪽을 아래로 내려 <b>위치</b>를 켠 뒤 다시 시도해 주세요.</p>';
+    } else if (code === 3) {
+      title = '위치를 찾는 데 시간이 걸리고 있어요';
+      body = '<p>실내라면 창가나 밖에서 잠시 후 다시 시도해 주세요.</p>';
+    } else if (inApp) {
+      title = '메신저 안에서는 위치를 쓸 수 없어요';
+      body = '<p>카카오톡·네이버 등 앱 안에서 열린 화면은 위치 권한을 물어보지 않아요. 크롬 같은 브라우저로 열어 주세요.</p>' +
+        (android ? '' : '<p>오른쪽 아래(또는 위) <b>⋯</b> 메뉴 → <b>다른 브라우저로 열기 / Safari로 열기</b></p>');
+      if (kakao) {
+        extra = '<a class="btn primary" href="kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href) + '">브라우저로 열기</a>';
+      } else if (android) {
+        extra = '<a class="btn primary" href="intent://' + location.host + location.pathname +
+          '#Intent;scheme=https;package=com.android.chrome;end">크롬으로 열기</a>';
+      }
+    } else if (ourApp) {
+      title = '앱에 위치 권한이 없어요';
+      body = '<ol><li>휴대폰 <b>설정</b> → <b>애플리케이션</b> → <b>안양 과천 화장실맵</b></li>' +
+        '<li><b>권한</b> → <b>위치</b> → <b>앱 사용 중에만 허용</b></li></ol>';
+    } else if (android) {
+      title = '위치 권한이 막혀 있어요';
+      body = '<p>브라우저는 한 번 거부하면 다시 묻지 않아요. 아래처럼 직접 허용해 주세요.</p>' +
+        '<ol><li>주소창 왼쪽 <b>자물쇠(또는 ⚙)</b> 아이콘 누르기</li>' +
+        '<li><b>권한</b>(또는 <b>사이트 설정</b>) → <b>위치</b> → <b>허용</b></li>' +
+        '<li>페이지 <b>새로고침</b></li></ol>' +
+        '<p class="muted">그래도 안 되면: 휴대폰 설정 → 애플리케이션 → <b>Chrome</b>(또는 삼성 인터넷) → 권한 → 위치 허용</p>' +
+        '<p class="muted">위치 권한을 한 번만 허용하면 되는 <a href="' + APK_URL + '">안드로이드 앱</a>도 있어요.</p>';
+    } else {
+      title = '위치 권한이 막혀 있어요';
+      body = '<p>브라우저는 한 번 거부하면 다시 묻지 않아요. 아래처럼 직접 허용해 주세요.</p>' +
+        '<ol><li>주소창 왼쪽 <b>가가</b>(또는 <b>AA</b>) 버튼 → <b>웹 사이트 설정</b> → <b>위치</b> → <b>허용</b></li>' +
+        '<li>그래도 안 되면: 아이폰 <b>설정</b> → <b>개인정보 보호 및 보안</b> → <b>위치 서비스</b> 켜기 → <b>Safari 웹 사이트</b> → <b>앱을 사용하는 동안</b></li>' +
+        '<li>페이지 <b>새로고침</b></li></ol>';
+    }
+
+    openSheet(
+      '<h2>' + title + '</h2><div class="loc-help">' + body + '</div>' +
+      '<div class="actions">' + (extra || '<button type="button" class="btn" data-act="cancel">닫기</button>') +
+        '<button type="button" class="btn primary" data-act="retry">다시 시도</button></div>'
+    );
+    $('sheet-body').onclick = function (e) {
+      if (e.target.closest('button[data-act="cancel"]')) closeSheet();
+      if (e.target.closest('button[data-act="retry"]')) { closeSheet(); getPosition(retry); }
+    };
   }
 
   // 앱을 열면 내 위치를 찾아 지도 중심으로 (실패하거나 지역 밖이면 조용히 기본 위치 유지)

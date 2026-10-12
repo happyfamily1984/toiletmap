@@ -318,9 +318,9 @@ input, textarea { font: inherit; }
   position: absolute; left: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5;
   display: inline-flex; align-items: center; justify-content: center;
   height: 48px; padding: 0 20px; border-radius: 999px;
-  background: #1f2f5c; color: #fff; font-size: 16px; font-weight: 900; text-decoration: none;
+  background: #2f4fa8; color: #fff; font-size: 16px; font-weight: 900; text-decoration: none;
   box-shadow: var(--shadow);
 }
-.join-btn:active { background: #16234a; }
+.join-btn:active { background: #253f88; }
 
 .view-only { color: var(--muted); font-size: 14px; text-align: center; margin: 4px 0 0; }

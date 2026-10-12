@@ -678,34 +678,107 @@
   }
 
   // ---------------- 내 위치 / 메뉴 ----------------
-  function locate() {
+  // 내 위치 파란 점 표시
+  function showMyLocation(latlng) {
+    var nm = naver.maps;
+    if (!state.myMarker) {
+      state.myMarker = new nm.Marker({
+        map: state.map,
+        position: latlng,
+        zIndex: 10,
+        icon: {
+          content: '<div style="width:16px;height:16px;border-radius:50%;background:#2f7cf6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,124,246,.35);transform:translate(-50%,-50%)"></div>',
+          anchor: new nm.Point(0, 0),
+        },
+      });
+    } else {
+      state.myMarker.setPosition(latlng);
+    }
+  }
+
+  function getPosition(onOk) {
     if (!navigator.geolocation) return toast('위치 기능을 사용할 수 없어요');
     navigator.geolocation.getCurrentPosition(function (pos) {
-      var nm = naver.maps;
-      var lat = pos.coords.latitude;
-      var lng = pos.coords.longitude;
+      onOk(pos.coords.latitude, pos.coords.longitude);
+    }, function () {
+      toast('위치 권한을 허용해 주세요');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  }
+
+  function locate() {
+    getPosition(function (lat, lng) {
       if (!inBounds(lat, lng)) {
         toast('현재 위치가 과천·안양·의왕 밖이에요');
         return;
       }
-      var latlng = new nm.LatLng(lat, lng);
-      if (!state.myMarker) {
-        state.myMarker = new nm.Marker({
-          map: state.map,
-          position: latlng,
-          zIndex: 10,
-          icon: {
-            content: '<div style="width:16px;height:16px;border-radius:50%;background:#2f7cf6;border:3px solid #fff;box-shadow:0 0 0 2px rgba(47,124,246,.35);transform:translate(-50%,-50%)"></div>',
-            anchor: new nm.Point(0, 0),
-          },
-        });
-      } else {
-        state.myMarker.setPosition(latlng);
-      }
+      var latlng = new naver.maps.LatLng(lat, lng);
+      showMyLocation(latlng);
       state.map.morph(latlng, LABEL_ZOOM);
-    }, function () {
-      toast('위치 권한을 허용해 주세요');
-    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+    });
+  }
+
+  // ---------------- 내 근처 화장실 추천 ----------------
+  // 두 지점 사이 거리(m)
+  function distanceM(lat1, lng1, lat2, lng2) {
+    var R = 6371000;
+    var toRad = Math.PI / 180;
+    var dLat = (lat2 - lat1) * toRad;
+    var dLng = (lng2 - lng1) * toRad;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.sqrt(a));
+  }
+
+  function formatDistance(m) {
+    return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
+  }
+
+  function nearby() {
+    if (!state.map) return;
+    if (!state.toilets.length) return toast('아직 등록된 화장실이 없어요');
+    toast('내 위치를 찾는 중…');
+    getPosition(function (lat, lng) {
+      $('toast').hidden = true;
+      var here = new naver.maps.LatLng(lat, lng);
+      showMyLocation(here);
+      var list = state.toilets.map(function (t) {
+        return { t: t, d: distanceM(lat, lng, t.lat, t.lng) };
+      }).sort(function (x, y) { return x.d - y.d; }).slice(0, 5);
+      var best = list[0];
+      // 내 위치와 가장 가까운 화장실이 함께 보이게
+      state.map.fitBounds(
+        new naver.maps.LatLngBounds(
+          new naver.maps.LatLng(Math.min(lat, best.t.lat), Math.min(lng, best.t.lng)),
+          new naver.maps.LatLng(Math.max(lat, best.t.lat), Math.max(lng, best.t.lng))
+        ),
+        { top: 120, right: 60, bottom: 360, left: 60 }
+      );
+      openSheet(
+        '<h2>📍 내 근처 화장실</h2>' +
+        (best.d > 5000 ? '<p class="address">가까운 곳에 등록된 화장실이 없어요. 가장 가까운 곳은 ' + formatDistance(best.d) + ' 떨어져 있어요.</p>' : '') +
+        '<div class="near-list">' +
+        list.map(function (it, i) {
+          var t = it.t;
+          var walk = Math.max(1, Math.round(it.d / 67)); // 걸음 약 4km/h
+          return '<button type="button" class="near-item' + (i === 0 ? ' best' : '') + '" data-id="' + escapeHtml(t.id) + '">' +
+            (i === 0 ? '<span class="near-badge">가장 가까움</span>' : '') +
+            '<span class="near-top"><span class="near-name">' + escapeHtml(t.name) + '</span>' +
+              '<span class="near-dist">' + formatDistance(it.d) + '</span></span>' +
+            '<span class="near-sub"><span class="near-stars">' + starsText(ratingOf(t)) + '</span> · 걸어서 약 ' + walk + '분' +
+              (t.password ? ' · 🔑 ' + escapeHtml(t.password) : '') + '</span>' +
+          '</button>';
+        }).join('') +
+        '</div>'
+      );
+      $('sheet-body').onclick = function (e) {
+        var item = e.target.closest('button[data-id]');
+        if (!item) return;
+        var t = findToilet(item.getAttribute('data-id'));
+        if (!t) return;
+        state.map.morph(new naver.maps.LatLng(t.lat, t.lng), 17);
+        showDetail(t);
+      };
+    });
   }
 
   // 안드로이드 앱의 뒤로가기 버튼: 열린 시트/메뉴를 먼저 닫는다
@@ -800,6 +873,7 @@
   function setupMainUi() {
     $('locate-btn').addEventListener('click', locate);
     $('join-btn').addEventListener('click', showApplyForm);
+    $('near-btn').addEventListener('click', nearby);
     // 프로모션 전단지
     document.querySelector('.promo-row').addEventListener('click', function (e) {
       var btn = e.target.closest('.promo-btn');

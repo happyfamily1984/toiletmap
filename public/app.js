@@ -880,7 +880,7 @@
         });
         state.map.fitBounds(
           new naver.maps.LatLngBounds(new naver.maps.LatLng(minLat, minLng), new naver.maps.LatLng(maxLat, maxLng)),
-          { top: 110, right: 70, bottom: 290, left: 70 }
+          { top: 110, right: 70, bottom: 230, left: 70 }
         );
         if (state.map.getZoom() > NEAR_MAX_ZOOM) state.map.setZoom(NEAR_MAX_ZOOM);
       };

@@ -85,8 +85,11 @@
         <button id="join-btn" class="join-btn" type="button">가입신청</button>
       </div>
       <button id="bm-btn" class="bm-btn" type="button" aria-expanded="false" aria-controls="bm-panel">배민플러스<span class="arrow">▲</span></button>
-      <button id="add-btn" class="add-btn" type="button">＋ 화장실 등록</button>
-      <button id="locate-btn" class="fab" type="button" aria-label="내 위치">◎</button>
+      <!-- 맨 아래 줄: 화장실 등록 + 내 위치(오른쪽 끝) -->
+      <div class="fab-row">
+        <button id="add-btn" class="add-btn" type="button">＋ 화장실 등록</button>
+        <button id="locate-btn" class="fab" type="button" aria-label="내 위치">◎</button>
+      </div>
     </div>
 
     <div id="sheet-backdrop" class="sheet-backdrop" hidden></div>

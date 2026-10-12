@@ -700,13 +700,23 @@
     }
   }
 
-  function getPosition(onOk) {
-    if (!navigator.geolocation) return toast('위치 기능을 사용할 수 없어요');
+  function getPosition(onOk, quiet) {
+    if (!navigator.geolocation) return quiet ? null : toast('위치 기능을 사용할 수 없어요');
     navigator.geolocation.getCurrentPosition(function (pos) {
       onOk(pos.coords.latitude, pos.coords.longitude);
     }, function () {
-      toast('위치 권한을 허용해 주세요');
+      if (!quiet) toast('위치 권한을 허용해 주세요');
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  }
+
+  // 앱을 열면 내 위치를 찾아 지도 중심으로 (실패하거나 지역 밖이면 조용히 기본 위치 유지)
+  function autoLocate() {
+    getPosition(function (lat, lng) {
+      if (state.nearId || !inBounds(lat, lng)) return; // 그 사이 내 근처를 눌렀으면 건드리지 않음
+      var latlng = new naver.maps.LatLng(lat, lng);
+      showMyLocation(latlng);
+      state.map.morph(latlng, NEAR_MAX_ZOOM);
+    }, true);
   }
 
   function locate() {
@@ -1024,6 +1034,7 @@
       mapReady = loadNaverMaps(state.config.naverClientId).then(initMap).then(function () {
         var saved = savedZone();
         if (saved) setZone(saved, false);
+        autoLocate();
       });
     }
     mapReady

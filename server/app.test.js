@@ -12,14 +12,17 @@ const { createStore } = require('./store');
 const BACKENDS = ['file'];
 if (process.env.TEST_DATABASE_URL) BACKENDS.push('postgres');
 
-async function startServer(backend) {
+async function startServer(backend, extra = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'toiletmap-'));
   const store = createStore({
     databaseUrl: backend === 'postgres' ? process.env.TEST_DATABASE_URL : '',
     dataFile: path.join(dir, 'toilets.json'),
   });
   await store.init();
-  if (backend === 'postgres') await store.pool.query('DELETE FROM toilets');
+  if (backend === 'postgres') {
+    await store.pool.query('DELETE FROM toilets');
+    await store.pool.query('DELETE FROM applications');
+  }
   const app = createApp({
     accessCode: '4821',
     viewCode: '0000',
@@ -27,6 +30,8 @@ async function startServer(backend) {
     naverClientId: 'test-client',
     secureCookie: false,
     trustProxy: false,
+    adminPassword: '794613',
+    ...extra,
   }, store);
   const listener = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
@@ -159,6 +164,50 @@ for (const backend of BACKENDS) {
       assert.strictEqual((await call('PUT', `/api/toilets/${id}`, { rating: 5 })).status, 403);
       assert.strictEqual((await call('DELETE', `/api/toilets/${id}`)).status, 403);
       assert.strictEqual((await call('GET', '/api/toilets')).body.toilets[0].rating, 3);
+    } finally {
+      server.close();
+    }
+  });
+
+  test(`[${backend}] 가입신청 제출과 관리자 확인`, async () => {
+    const { server, call } = await startServer(backend);
+    try {
+      const form = { name: '홍길동', phone: '010-1234-5678', zone: '동안A', weeklyCount: '250', message: '주말 위주' };
+      // 접속 코드 없이는 제출 불가
+      assert.strictEqual((await call('POST', '/api/applications', form)).status, 401);
+      await call('POST', '/api/login', { code: '0000' }); // 보기 전용 멤버도 신청 가능
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '' })).status, 400);
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, phone: '12' })).status, 400);
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, zone: '서울' })).status, 400);
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, weeklyCount: '' })).status, 400);
+      assert.strictEqual((await call('POST', '/api/applications', form)).status, 201);
+      assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '김철수', zone: '과천B', weeklyCount: 120 })).status, 201);
+
+      // 관리자 로그인 전에는 목록 불가
+      assert.deepStrictEqual((await call('GET', '/api/admin/session')).body, { enabled: true, admin: false });
+      assert.strictEqual((await call('GET', '/api/admin/applications')).status, 401);
+      assert.strictEqual((await call('POST', '/api/admin/login', { password: '000000' })).status, 401);
+      assert.strictEqual((await call('POST', '/api/admin/login', { password: '794613' })).status, 200);
+      const list = (await call('GET', '/api/admin/applications')).body.applications;
+      assert.deepStrictEqual(list.map((a) => a.name), ['김철수', '홍길동']); // 최신순
+      assert.strictEqual(list[1].phone, '01012345678');
+      assert.strictEqual(list[1].weeklyCount, 250);
+      assert.strictEqual(list[1].zone, '동안A');
+      assert.strictEqual((await call('DELETE', `/api/admin/applications/${list[0].id}`)).status, 200);
+      assert.strictEqual((await call('GET', '/api/admin/applications')).body.applications.length, 1);
+      await call('POST', '/api/admin/logout');
+      assert.strictEqual((await call('GET', '/api/admin/applications')).status, 401);
+    } finally {
+      server.close();
+    }
+  });
+
+  test(`[${backend}] ADMIN_PASSWORD 없으면 관리자 기능 꺼짐`, async () => {
+    const { server, call } = await startServer(backend, { adminPassword: '' });
+    try {
+      assert.deepStrictEqual((await call('GET', '/api/admin/session')).body, { enabled: false, admin: false });
+      assert.strictEqual((await call('POST', '/api/admin/login', { password: '' })).status, 503);
+      assert.strictEqual((await call('GET', '/api/admin/applications')).status, 401);
     } finally {
       server.close();
     }

@@ -43,7 +43,8 @@
       body: body ? JSON.stringify(body) : undefined,
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (data) {
-        if (res.status === 401 && url !== '/api/login') {
+        // 관리자 API 의 401 은 멤버 로그아웃이 아님 (관리자 비밀번호만 다시 입력)
+        if (res.status === 401 && url !== '/api/login' && url.indexOf('/api/admin/') !== 0) {
           showLogin();
         }
         if (!res.ok) {
@@ -517,6 +518,155 @@
     };
   }
 
+  // ---------------- 가입신청 ----------------
+  var JOIN_PHONE = '010-7449-6511';
+
+  function showApplyForm() {
+    openSheet(
+      '<h2>배민플러스 가입신청</h2>' +
+      '<a class="call-link" href="tel:' + JOIN_PHONE + '">' +
+        '<span class="ico">📞</span><span>전화로 바로 문의<small>' + JOIN_PHONE + '</small></span></a>' +
+      '<form id="apply-form" autocomplete="off">' +
+        '<label class="field"><span>이름 *</span><input name="name" maxlength="20" placeholder="홍길동" /></label>' +
+        '<label class="field"><span>전화번호 *</span><input name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="010-1234-5678" /></label>' +
+        '<div class="field"><span>희망 권역 *</span><div class="choice">' +
+          '<label><input type="radio" name="zone" value="과천B" /><span class="gb">과천B</span></label>' +
+          '<label><input type="radio" name="zone" value="동안A" /><span class="da">동안A</span></label>' +
+        '</div></div>' +
+        '<label class="field"><span>주 평균 수행 건수 *</span><input name="weeklyCount" type="number" inputmode="numeric" min="0" max="2000" placeholder="예: 150" /></label>' +
+        '<label class="field"><span>기타 하고 싶은 말</span><textarea name="message" maxlength="500" placeholder="문의 사항, 희망 시간대 등"></textarea></label>' +
+        '<p class="form-error" id="form-error"></p>' +
+        '<div class="actions">' +
+          '<button type="button" class="btn" data-act="cancel">취소</button>' +
+          '<button type="submit" class="btn primary">신청하기</button>' +
+        '</div>' +
+      '</form>'
+    );
+    var form = $('apply-form');
+    form.oninput = function () { $('form-error').textContent = ''; };
+    $('sheet-body').onclick = function (e) {
+      if (e.target.closest('button[data-act="cancel"]')) closeSheet();
+    };
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      var zone = form.querySelector('input[name="zone"]:checked');
+      var payload = {
+        name: form.elements.name.value,
+        phone: form.elements.phone.value,
+        zone: zone ? zone.value : '',
+        weeklyCount: form.elements.weeklyCount.value,
+        message: form.elements.message.value,
+      };
+      if (!payload.name.trim()) { $('form-error').textContent = '이름을 입력해 주세요.'; return; }
+      if (!payload.phone.trim()) { $('form-error').textContent = '전화번호를 입력해 주세요.'; return; }
+      if (!payload.zone) { $('form-error').textContent = '희망 권역을 선택해 주세요.'; return; }
+      if (payload.weeklyCount === '') { $('form-error').textContent = '주 평균 수행 건수를 입력해 주세요.'; return; }
+      var btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true;
+      api('POST', '/api/applications', payload).then(function () {
+        closeSheet();
+        toast('가입신청이 접수됐어요. 곧 연락드릴게요!');
+      }).catch(function (err) {
+        $('form-error').textContent = err.message;
+        btn.disabled = false;
+      });
+    };
+  }
+
+  // ---------------- 관리자 (가입신청 확인) ----------------
+  function formatDateTime(iso) {
+    var d = new Date(iso);
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function formatPhone(p) {
+    return p.length === 11 ? p.slice(0, 3) + '-' + p.slice(3, 7) + '-' + p.slice(7) : p;
+  }
+
+  function openAdmin() {
+    api('GET', '/api/admin/session').then(function (s) {
+      if (!s.enabled) {
+        openSheet('<h2>관리자</h2><p class="empty">관리자 비밀번호가 아직 설정되지 않았어요.<br>Render 환경변수에 ADMIN_PASSWORD 를 넣어 주세요.</p>');
+        $('sheet-body').onclick = null;
+        return;
+      }
+      if (s.admin) showApplications(); else showAdminLogin();
+    }).catch(function (err) { toast(err.message); });
+  }
+
+  function showAdminLogin() {
+    openSheet(
+      '<h2>관리자 로그인</h2>' +
+      '<form id="admin-form" autocomplete="off">' +
+        '<label class="field"><span>관리자 비밀번호</span>' +
+          '<input name="password" type="password" inputmode="numeric" maxlength="20" placeholder="비밀번호" /></label>' +
+        '<p class="form-error" id="form-error"></p>' +
+        '<div class="actions">' +
+          '<button type="button" class="btn" data-act="cancel">취소</button>' +
+          '<button type="submit" class="btn primary">확인</button>' +
+        '</div>' +
+      '</form>'
+    );
+    var form = $('admin-form');
+    setTimeout(function () { form.elements.password.focus(); }, 200);
+    $('sheet-body').onclick = function (e) {
+      if (e.target.closest('button[data-act="cancel"]')) closeSheet();
+    };
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      api('POST', '/api/admin/login', { password: form.elements.password.value })
+        .then(showApplications)
+        .catch(function (err) {
+          $('form-error').textContent = err.message;
+          form.elements.password.value = '';
+        });
+    };
+  }
+
+  function showApplications() {
+    api('GET', '/api/admin/applications').then(function (data) {
+      var apps = data.applications || [];
+      openSheet(
+        '<h2>가입신청 ' + apps.length + '건</h2>' +
+        '<div class="apps">' +
+        (apps.length ? apps.map(function (a) {
+          var zc = a.zone === '동안A' ? 'da' : 'gb';
+          return '<div class="app-card">' +
+            '<div class="top"><span class="nm">' + escapeHtml(a.name) + '</span>' +
+              '<span class="zn ' + zc + '">' + escapeHtml(a.zone) + '</span></div>' +
+            '<a class="ph" href="tel:' + escapeHtml(a.phone) + '">📞 ' + escapeHtml(formatPhone(a.phone)) + '</a>' +
+            '<div class="meta2">주 평균 ' + Number(a.weeklyCount) + '건 · ' + escapeHtml(formatDateTime(a.createdAt)) + '</div>' +
+            (a.message ? '<div class="msg">' + escapeHtml(a.message) + '</div>' : '') +
+            '<button type="button" class="del" data-del="' + escapeHtml(a.id) + '">삭제</button>' +
+          '</div>';
+        }).join('') : '<p class="empty">아직 들어온 가입신청이 없어요.</p>') +
+        '</div>' +
+        '<div class="actions">' +
+          '<button type="button" class="btn" data-act="admin-logout">관리자 로그아웃</button>' +
+          '<button type="button" class="btn primary" data-act="close">닫기</button>' +
+        '</div>'
+      );
+      $('sheet-body').onclick = function (e) {
+        var del = e.target.closest('button[data-del]');
+        if (del) {
+          if (!confirm('이 가입신청을 삭제할까요?')) return;
+          api('DELETE', '/api/admin/applications/' + encodeURIComponent(del.getAttribute('data-del')))
+            .then(showApplications).catch(function (err) { toast(err.message); });
+          return;
+        }
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        if (btn.getAttribute('data-act') === 'close') closeSheet();
+        if (btn.getAttribute('data-act') === 'admin-logout') {
+          api('POST', '/api/admin/logout').then(function () { closeSheet(); toast('관리자 로그아웃했어요'); });
+        }
+      };
+    }).catch(function (err) {
+      if (err.status === 401) showAdminLogin(); else toast(err.message);
+    });
+  }
+
   function deleteToilet(t) {
     if (!confirm('"' + t.name + '" 화장실을 삭제할까요?')) return;
     api('DELETE', '/api/toilets/' + encodeURIComponent(t.id)).then(function () {
@@ -649,6 +799,7 @@
 
   function setupMainUi() {
     $('locate-btn').addEventListener('click', locate);
+    $('join-btn').addEventListener('click', showApplyForm);
     // 프로모션 전단지
     document.querySelector('.promo-row').addEventListener('click', function (e) {
       var btn = e.target.closest('.promo-btn');
@@ -689,6 +840,7 @@
         var r = REGIONS[region];
         state.map.morph(new naver.maps.LatLng(r.lat, r.lng), 14);
       }
+      if (btn.id === 'admin-btn') openAdmin();
       if (btn.id === 'logout-btn') {
         api('POST', '/api/logout').then(showLogin, showLogin);
       }

@@ -2,8 +2,8 @@
 
 const path = require('path');
 const express = require('express');
-const { createAuth } = require('./auth');
-const { validateToilet, REGION_BOUNDS } = require('./store');
+const { createAuth, createAdminAuth } = require('./auth');
+const { validateToilet, validateApplication, REGION_BOUNDS } = require('./store');
 
 // 비동기 라우트의 오류를 Express 오류 처리로 넘긴다
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -17,6 +17,14 @@ function createApp(config, store) {
     secret: config.sessionSecret,
     secureCookie: config.secureCookie,
   });
+
+  const admin = createAdminAuth({
+    password: config.adminPassword || '',
+    secret: config.sessionSecret,
+    secureCookie: config.secureCookie,
+  });
+  // 가입신청 남발 방지: IP 당 1시간에 5건
+  const applyLog = new Map();
 
   if (config.trustProxy) app.set('trust proxy', 1);
   app.disable('x-powered-by');
@@ -81,6 +89,39 @@ function createApp(config, store) {
       if (err && !res.headersSent) res.status(404).json({ error: 'Not found' });
     });
   });
+
+  // ---- 가입신청 (멤버라면 누구나 제출) ----
+  app.post('/api/applications', auth.requireAuth, wrap(async (req, res) => {
+    const { error, value } = validateApplication(req.body || {});
+    if (error) return res.status(400).json({ error });
+    const ip = req.ip || 'unknown';
+    const now = Date.now();
+    const recent = (applyLog.get(ip) || []).filter((t) => now - t < 60 * 60 * 1000);
+    if (recent.length >= 5) {
+      return res.status(429).json({ error: '신청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+    recent.push(now);
+    applyLog.set(ip, recent);
+    await store.createApplication(value);
+    res.status(201).json({ ok: true });
+  }));
+
+  // ---- 관리자 (가입신청 확인) ----
+  app.get('/api/admin/session', (req, res) => {
+    res.json({ enabled: admin.enabled, admin: admin.isAdmin(req) });
+  });
+  app.post('/api/admin/login', admin.login);
+  app.post('/api/admin/logout', admin.logout);
+  app.get('/api/admin/applications', admin.requireAdmin, wrap(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ applications: await store.listApplications() });
+  }));
+  app.delete('/api/admin/applications/:id', admin.requireAdmin, wrap(async (req, res) => {
+    if (!(await store.removeApplication(req.params.id))) {
+      return res.status(404).json({ error: '신청서를 찾을 수 없습니다.' });
+    }
+    res.json({ ok: true });
+  }));
 
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 

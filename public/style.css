@@ -220,7 +220,8 @@ input, textarea { font: inherit; }
 }
 .main.has-ad .map { height: calc(100% - 50px - var(--safe-bottom)); }
 .main.has-ad .fabs { bottom: calc(74px + var(--safe-bottom)); }
-.main.has-ad .join-btn { bottom: calc(74px + var(--safe-bottom)); }
+.main.has-ad .join-btn {
+  border: 0; cursor: pointer; bottom: calc(74px + var(--safe-bottom)); }
 
 /* ---------- 별점 ---------- */
 .label-stars { font-size: 11px; color: #f5a400; letter-spacing: -0.5px; line-height: 1.2; }
@@ -313,3 +314,34 @@ input, textarea { font: inherit; }
 .join-btn:active { background: #f2c200; }
 
 .view-only { color: var(--muted); font-size: 14px; text-align: center; margin: 4px 0 0; }
+
+/* ---------- 가입신청서 / 관리자 ---------- */
+.call-link {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px 14px;
+  border-radius: 12px; background: #fff7cc; color: #1d2420; text-decoration: none; font-weight: 700;
+}
+.call-link .ico {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; background: #ffd21f;
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+}
+.call-link small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+.choice { display: flex; gap: 8px; }
+.choice label { flex: 1; }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice span {
+  display: block; text-align: center; padding: 11px 0; border-radius: 10px;
+  border: 2px solid var(--border); font-weight: 700; color: var(--muted);
+}
+.choice input:checked + span.gb { border-color: #2f4fa8; background: #2f4fa8; color: #fff; }
+.choice input:checked + span.da { border-color: #ff2d87; background: #ff2d87; color: #fff; }
+.apps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.app-card { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.app-card .top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.app-card .nm { font-weight: 800; font-size: 17px; }
+.app-card .zn { font-size: 12px; font-weight: 800; color: #fff; padding: 3px 8px; border-radius: 6px; }
+.app-card .zn.gb { background: #2f4fa8; } .app-card .zn.da { background: #ff2d87; }
+.app-card .ph { display: inline-block; margin-top: 6px; font-size: 16px; font-weight: 700; color: #2f4fa8; text-decoration: none; }
+.app-card .meta2 { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.app-card .msg { margin-top: 6px; white-space: pre-wrap; font-size: 14px; }
+.app-card .del { margin-top: 8px; border: 0; background: none; color: var(--danger); font-size: 13px; padding: 0; }
+.empty { color: var(--muted); text-align: center; padding: 20px 0; }

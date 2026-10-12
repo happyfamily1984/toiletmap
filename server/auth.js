@@ -135,4 +135,68 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
   return { login, logout, requireAuth, requireEditor, isAuthed, canEdit };
 }
 
-module.exports = { createAuth };
+/**
+ * 관리자 로그인 (가입신청 확인용). 비밀번호는 ADMIN_PASSWORD 환경변수로만 설정한다.
+ * 비밀번호가 없으면 관리자 기능은 꺼진다. 멤버 세션과 별도의 쿠키(12시간)를 쓴다.
+ */
+function createAdminAuth({ password, secret, secureCookie }) {
+  const ADMIN_COOKIE = 'tm_admin';
+  const HOURS = 12;
+  const key = `${secret}:admin:${password}`;
+  const MAX_FAILS = 5;
+  const LOCK_MS = 30 * 60 * 1000;
+  const attempts = new Map();
+
+  function cookie(value, maxAgeSec) {
+    const parts = [`${ADMIN_COOKIE}=${encodeURIComponent(value)}`, 'Path=/api', 'HttpOnly', 'SameSite=Strict', `Max-Age=${maxAgeSec}`];
+    if (secureCookie) parts.push('Secure');
+    return parts.join('; ');
+  }
+
+  function isAdmin(req) {
+    if (!password) return false;
+    const token = parseCookies(req.headers.cookie)[ADMIN_COOKIE];
+    if (!token) return false;
+    const [exp, sig] = token.split('.');
+    return !!exp && !!sig && Number(exp) > Date.now() && safeEqual(sig, sign(`admin:${exp}`, key));
+  }
+
+  function login(req, res) {
+    if (!password) return res.status(503).json({ error: '관리자 비밀번호가 설정되지 않았습니다. (ADMIN_PASSWORD)' });
+    const ip = req.ip || 'unknown';
+    const now = Date.now();
+    const rec = attempts.get(ip) || { fails: 0, lockedUntil: 0 };
+    if (rec.lockedUntil > now) {
+      const min = Math.ceil((rec.lockedUntil - now) / 60000);
+      return res.status(429).json({ error: `시도가 너무 많습니다. ${min}분 후 다시 시도해 주세요.` });
+    }
+    const pw = String((req.body && req.body.password) || '');
+    if (!safeEqual(pw, password)) {
+      rec.fails += 1;
+      if (rec.fails >= MAX_FAILS) {
+        rec.fails = 0;
+        rec.lockedUntil = now + LOCK_MS;
+      }
+      attempts.set(ip, rec);
+      return res.status(401).json({ error: '관리자 비밀번호가 올바르지 않습니다.' });
+    }
+    attempts.delete(ip);
+    const exp = String(now + HOURS * 60 * 60 * 1000);
+    res.setHeader('Set-Cookie', cookie(`${exp}.${sign(`admin:${exp}`, key)}`, HOURS * 60 * 60));
+    return res.json({ ok: true });
+  }
+
+  function logout(req, res) {
+    res.setHeader('Set-Cookie', cookie('', 0));
+    res.json({ ok: true });
+  }
+
+  function requireAdmin(req, res, next) {
+    if (isAdmin(req)) return next();
+    return res.status(401).json({ error: '관리자 로그인이 필요합니다.' });
+  }
+
+  return { enabled: !!password, isAdmin, login, logout, requireAdmin };
+}
+
+module.exports = { createAuth, createAdminAuth };

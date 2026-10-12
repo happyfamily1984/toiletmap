@@ -67,6 +67,7 @@ for (const backend of BACKENDS) {
     try {
       const res = await call('GET', '/api/toilets');
       assert.strictEqual(res.status, 401);
+      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 401);
       const cfg = await call('GET', '/api/config');
       assert.strictEqual(cfg.body.naverClientId, 'test-client');
     } finally {
@@ -91,6 +92,9 @@ for (const backend of BACKENDS) {
     try {
       assert.strictEqual((await call('POST', '/api/login', { code: '4821' })).status, 200);
       assert.strictEqual((await call('GET', '/api/session')).body.authed, true);
+      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
+      assert.strictEqual((await call('GET', '/api/promo/..%2Fapp.js')).status, 404);
+      assert.strictEqual((await call('GET', '/api/promo/none.jpg')).status, 404);
 
       const created = await call('POST', '/api/toilets', sample);
       assert.strictEqual(created.status, 201);

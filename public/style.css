@@ -279,3 +279,27 @@ input, textarea { font: inherit; }
   50% { opacity: 1; transform: scale(1.15); }
 }
 @media (prefers-reduced-motion: reduce) { .sparkle { animation: none; opacity: 0.9; } }
+
+/* ---------- 프로모션 전단지 ---------- */
+.promo-btn {
+  border: 0; border-radius: 16px; padding: 9px 16px; line-height: 1.15;
+  background: linear-gradient(135deg, #123f4f, #0d5a55); color: #fff;
+  font-size: 17px; font-weight: 900; box-shadow: var(--shadow); text-align: center;
+}
+.promo-btn small { display: block; font-size: 11px; font-weight: 700; color: #7ff0d8; }
+.promo-btn:active { filter: brightness(1.15); }
+.promo {
+  position: absolute; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(16px + var(--safe-top)) 16px calc(16px + var(--safe-bottom));
+}
+.promo-box { position: relative; max-width: 480px; width: 100%; }
+.promo-box img {
+  display: block; width: 100%; max-height: calc(100vh - 80px); object-fit: contain;
+  border-radius: 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.promo-close {
+  position: absolute; top: -14px; right: -6px; width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: #fff; color: #1d2420; font-size: 18px; font-weight: 700;
+  box-shadow: var(--shadow);
+}

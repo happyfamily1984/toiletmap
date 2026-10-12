@@ -70,6 +70,17 @@ function createApp(config, store) {
     res.json({ ok: true });
   }));
 
+  // 프로모션 전단지 이미지 (접속 코드 입력한 멤버만)
+  const PROMO_DIR = path.join(__dirname, 'promo');
+  app.get('/api/promo/:file', auth.requireAuth, (req, res) => {
+    const file = req.params.file;
+    if (!/^[a-z0-9-]+\.(jpg|png)$/.test(file)) return res.status(404).json({ error: 'Not found' });
+    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.sendFile(path.join(PROMO_DIR, file), (err) => {
+      if (err && !res.headersSent) res.status(404).json({ error: 'Not found' });
+    });
+  });
+
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
   // eslint-disable-next-line no-unused-vars

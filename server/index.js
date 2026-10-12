@@ -23,6 +23,10 @@ if (viewCode && (!/^\d{4}$/.test(viewCode) || viewCode === accessCode)) {
   process.exit(1);
 }
 
+if (!env.ADMIN_PASSWORD) {
+  console.warn('알림: ADMIN_PASSWORD 가 없어 관리자(가입신청 확인) 기능이 꺼져 있습니다.');
+}
+
 if (!env.NAVER_MAP_CLIENT_ID) {
   console.warn('경고: NAVER_MAP_CLIENT_ID 가 비어 있어 지도가 표시되지 않습니다.');
 }
@@ -41,6 +45,8 @@ const store = createStore({
 const config = {
   accessCode,
   viewCode,
+  // 관리자 비밀번호(가입신청 확인용). 공개 저장소이므로 코드에 넣지 않고 환경변수로만 설정
+  adminPassword: env.ADMIN_PASSWORD || '',
   sessionSecret,
   naverClientId: env.NAVER_MAP_CLIENT_ID || '',
   // 카카오 애드핏 광고 단위 ID (예: DAN-xxxxxxxx). 비워두면 광고 없음

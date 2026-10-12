@@ -83,6 +83,25 @@ function validateToilet(input, { partial = false } = {}) {
   return { value: out };
 }
 
+// ---------------- 가입신청 ----------------
+const APPLY_ZONES = ['동안A', '과천B'];
+
+/** 가입신청 입력 검증. 잘못되면 { error } */
+function validateApplication(input) {
+  const name = cleanText(input.name, 20);
+  if (!name) return { error: '이름을 입력해 주세요.' };
+  const phone = cleanText(input.phone, 20).replace(/[^0-9]/g, '');
+  if (!/^0\d{8,10}$/.test(phone)) return { error: '전화번호를 정확히 입력해 주세요. (예: 010-1234-5678)' };
+  const zone = cleanText(input.zone, 10);
+  if (!APPLY_ZONES.includes(zone)) return { error: '희망 권역을 선택해 주세요.' };
+  const weekly = Number(input.weeklyCount);
+  if (input.weeklyCount === '' || input.weeklyCount === undefined || !Number.isInteger(weekly) || weekly < 0 || weekly > 2000) {
+    return { error: '주 평균 수행 건수를 숫자로 입력해 주세요.' };
+  }
+  const message = cleanText(input.message, 500);
+  return { value: { name, phone, zone, weeklyCount: weekly, message } };
+}
+
 // 별점이 없는 예전 데이터는 3점으로 보여준다
 function withRating(t) {
   return t.rating ? t : { ...t, rating: DEFAULT_RATING };
@@ -96,22 +115,25 @@ class FileStore {
   constructor(file) {
     this.file = file;
     this.items = [];
+    this.applications = [];
   }
 
   async init() {
     try {
       const parsed = JSON.parse(fs.readFileSync(this.file, 'utf8'));
       this.items = Array.isArray(parsed.toilets) ? parsed.toilets : [];
+      this.applications = Array.isArray(parsed.applications) ? parsed.applications : [];
     } catch (err) {
       if (err.code !== 'ENOENT') throw err;
       this.items = [];
+      this.applications = [];
     }
   }
 
   save() {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     const tmp = `${this.file}.${process.pid}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify({ toilets: this.items }, null, 2));
+    fs.writeFileSync(tmp, JSON.stringify({ toilets: this.items, applications: this.applications }, null, 2));
     fs.renameSync(tmp, this.file);
   }
 
@@ -142,6 +164,25 @@ class FileStore {
     this.save();
     return true;
   }
+
+  async createApplication(data) {
+    const item = { id: crypto.randomUUID(), ...data, createdAt: new Date().toISOString() };
+    this.applications.push(item);
+    this.save();
+    return item;
+  }
+
+  async listApplications() {
+    return this.applications.slice().reverse(); // 최신순
+  }
+
+  async removeApplication(id) {
+    const before = this.applications.length;
+    this.applications = this.applications.filter((a) => a.id !== id);
+    if (this.applications.length === before) return false;
+    this.save();
+    return true;
+  }
 }
 
 /**
@@ -166,6 +207,18 @@ function fromRow(r) {
   };
 }
 
+function appFromRow(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    zone: r.zone,
+    weeklyCount: r.weekly_count,
+    message: r.message,
+    createdAt: r.created_at.toISOString(),
+  };
+}
+
 class PgStore {
   constructor(connectionString) {
     const { Pool } = require('pg');
@@ -186,6 +239,16 @@ class PgStore {
         lng double precision NOT NULL,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
+      )`);
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS applications (
+        id uuid PRIMARY KEY,
+        name text NOT NULL,
+        phone text NOT NULL,
+        zone text NOT NULL,
+        weekly_count integer NOT NULL,
+        message text NOT NULL DEFAULT '',
+        created_at timestamptz NOT NULL DEFAULT now()
       )`);
     // 별점 컬럼 추가 (예전에 만든 표에도 적용, 기존 화장실은 3점)
     await this.pool.query(
@@ -225,6 +288,26 @@ class PgStore {
     return rowCount > 0;
   }
 
+  async createApplication(d) {
+    const { rows } = await this.pool.query(
+      `INSERT INTO applications (id, name, phone, zone, weekly_count, message)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [crypto.randomUUID(), d.name, d.phone, d.zone, d.weeklyCount, d.message]
+    );
+    return appFromRow(rows[0]);
+  }
+
+  async listApplications() {
+    const { rows } = await this.pool.query('SELECT * FROM applications ORDER BY created_at DESC');
+    return rows.map(appFromRow);
+  }
+
+  async removeApplication(id) {
+    if (!UUID_RE.test(id)) return false;
+    const { rowCount } = await this.pool.query('DELETE FROM applications WHERE id = $1', [id]);
+    return rowCount > 0;
+  }
+
   async close() {
     await this.pool.end();
   }
@@ -234,4 +317,4 @@ function createStore({ databaseUrl, dataFile }) {
   return databaseUrl ? new PgStore(databaseUrl) : new FileStore(dataFile);
 }
 
-module.exports = { createStore, validateToilet, inRegion, REGION_BOUNDS };
+module.exports = { createStore, validateToilet, validateApplication, inRegion, REGION_BOUNDS };

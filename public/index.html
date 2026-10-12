@@ -73,15 +73,19 @@
     <button id="join-btn" class="join-btn" type="button">가입신청</button>
 
     <div class="fabs">
-      <!-- 권역 표시 (과천B 남색 / 동안A 분홍, 한 번에 하나만) -->
-      <div class="promo-row">
-        <button id="zone-btn" class="zone-btn" type="button" aria-label="과천B 권역 보기">과천B<small>권역</small></button>
-        <button id="finish-btn" class="zone-btn finish" type="button" aria-label="동안A 권역 보기">동안A<small>권역</small></button>
+      <!-- 배민플러스 버튼을 누르면 권역·프로모션 버튼 4개가 열리고, 다시 누르면 닫힘 -->
+      <div id="bm-panel" class="bm-panel" hidden>
+        <!-- 권역 표시 (과천B 남색 / 동안A 분홍, 한 번에 하나만) -->
+        <div class="promo-row">
+          <button id="zone-btn" class="zone-btn" type="button" aria-label="과천B 권역 보기">과천B<small>권역</small></button>
+          <button id="finish-btn" class="zone-btn finish" type="button" aria-label="동안A 권역 보기">동안A<small>권역</small></button>
+        </div>
+        <div class="promo-row">
+          <button type="button" class="promo-btn" data-promo="gwacheon-b.jpg?v=3" data-title="배민플러스 살뜰 과천B 프로모션">과천B<small>프로모션</small></button>
+          <button type="button" class="promo-btn finish" data-promo="dongan-a.jpg?v=2" data-title="배민플러스 피니시 동안A 프로모션">동안A<small>프로모션</small></button>
+        </div>
       </div>
-      <div class="promo-row">
-        <button type="button" class="promo-btn" data-promo="gwacheon-b.jpg?v=3" data-title="배민플러스 살뜰 과천B 프로모션">과천B<small>프로모션</small></button>
-        <button type="button" class="promo-btn finish" data-promo="dongan-a.jpg?v=2" data-title="배민플러스 피니시 동안A 프로모션">동안A<small>프로모션</small></button>
-      </div>
+      <button id="bm-btn" class="bm-btn" type="button" aria-expanded="false" aria-controls="bm-panel">배민플러스<span class="arrow">▲</span></button>
       <button id="add-btn" class="add-btn" type="button">＋ 화장실 등록</button>
       <button id="locate-btn" class="fab" type="button" aria-label="내 위치">◎</button>
     </div>

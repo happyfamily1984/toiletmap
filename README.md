@@ -149,7 +149,7 @@ cd android
    `ANDROID_KEYSTORE_BASE64`(jks 파일을 base64 로 바꾼 글자), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`
    - 키 파일과 비밀번호는 꼭 따로 보관하세요. 저장소에는 절대 올리지 않습니다(`.gitignore` 에 `*.jks`).
 2. main 에 push 되면 Actions 실행 결과의 **Artifacts → `salddeul-toiletmap-aab`** 에 플레이스토어용 `.aab` 가 생깁니다.
-3. [Play Console](https://play.google.com/console) → 앱 만들기 → 테스트(비공개) 또는 프로덕션 → 새 버전에 `.aab` 업로드.
+3. [Play Console](https://play.google.com/console) → 앱(패키지 `com.anyang_toilet.myapp`) → 테스트(비공개) 또는 프로덕션 → 새 버전에 `.aab` 업로드.
    (Play 앱 서명 사용 — 업로드 키를 잃어버려도 Play Console 에서 재설정 가능)
 4. 앱 콘텐츠: 개인정보처리방침 URL `https://<서버주소>/privacy.html`, 데이터 보안(위치·이름·전화번호), 광고 여부 등을 입력합니다.
 5. 신규 개인 개발자 계정은 테스터 12명 이상이 14일간 비공개 테스트를 해야 프로덕션 출시를 신청할 수 있습니다.

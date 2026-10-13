@@ -79,11 +79,13 @@ jobs:
       - name: Publish APK release (main only)
         # 멤버 배포용 고정 링크:
         # https://github.com/<owner>/<repo>/releases/latest/download/salddeul-toiletmap.apk
+        # 플레이스토어 업로드용 .aab 도 같이 올림 (휴대폰에서 zip 풀 필요 없이 바로 받기):
+        # https://github.com/<owner>/<repo>/releases/latest/download/salddeul-toiletmap.aab
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.WEB_URL != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v1.0.${{ github.run_number }}" salddeul-toiletmap.apk \
+          gh release create "v1.0.${{ github.run_number }}" salddeul-toiletmap.apk salddeul-toiletmap.aab \
             --repo "${{ github.repository }}" \
             --title "안양 과천 화장실맵 v1.0.${{ github.run_number }}" \
             --notes "안드로이드 앱 (서버 주소: ${{ vars.WEB_URL }})" \

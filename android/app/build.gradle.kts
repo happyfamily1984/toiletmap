@@ -19,7 +19,8 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.salddeul.toiletmap"
+        // 플레이콘솔에 등록한 패키지 이름 (한 번 출시하면 바꿀 수 없음)
+        applicationId = "com.anyang_toilet.myapp"
         minSdk = 26
         targetSdk = 36
         versionCode = appVersionCode

@@ -27,14 +27,12 @@ function parseCookies(header) {
 }
 
 /**
- * 4자리 접속 코드 + 서명된 세션 쿠키.
- * - accessCode(편집 코드): 보기 + 화장실 등록/수정/삭제
- * - viewCode(보기 코드): 보기만 가능 (없으면 보기 전용 접속 없음)
+ * 4자리 편집 코드 + 서명된 세션 쿠키.
+ * 보기는 누구나 가능하고, 화장실 등록/수정/삭제만 편집 코드가 필요하다.
  * 코드를 바꾸면 그 코드로 받은 기존 세션은 무효가 된다(서명에 코드가 포함됨).
  */
-function createAuth({ accessCode, viewCode, secret, secureCookie }) {
+function createAuth({ accessCode, secret, secureCookie }) {
   const ROLES = { edit: accessCode };
-  if (viewCode) ROLES.view = viewCode;
   const keyFor = (role) => `${secret}:${role}:${ROLES[role]}`;
   // 예전(역할 구분 전) 세션 쿠키는 편집 코드로만 발급됐으므로 편집 권한으로 인정
   const legacyKey = `${secret}:${accessCode}`;
@@ -43,6 +41,11 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
   const MAX_FAILS = 5;
   const LOCK_MS = 10 * 60 * 1000;
   const attempts = new Map();
+  // 공개 서비스라 여러 IP 로 나눠 시도하는 것도 막는다: 전체 실패 30회/시간 → 1시간 동안 로그인 중지
+  const GLOBAL_MAX_FAILS = 30;
+  const GLOBAL_WINDOW_MS = 60 * 60 * 1000;
+  let globalFails = [];
+  let globalLockedUntil = 0;
 
   function issueToken(role) {
     const exp = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
@@ -50,7 +53,7 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
     return `${payload}.${sign(payload, keyFor(role))}`;
   }
 
-  /** 유효하면 'edit' | 'view', 아니면 null */
+  /** 유효하면 'edit', 아니면 null (예전 보기 전용 쿠키는 무효) */
   function roleOf(token) {
     if (!token) return null;
     const [payload, sig] = token.split('.');
@@ -91,8 +94,9 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
     const now = Date.now();
     const rec = attempts.get(ip) || { fails: 0, lockedUntil: 0 };
 
-    if (rec.lockedUntil > now) {
-      const min = Math.ceil((rec.lockedUntil - now) / 60000);
+    const lockedUntil = Math.max(rec.lockedUntil, globalLockedUntil);
+    if (lockedUntil > now) {
+      const min = Math.ceil((lockedUntil - now) / 60000);
       return res.status(429).json({ error: `시도가 너무 많습니다. ${min}분 후 다시 시도해 주세요.` });
     }
 
@@ -107,7 +111,13 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
         rec.lockedUntil = now + LOCK_MS;
       }
       attempts.set(ip, rec);
-      return res.status(401).json({ error: '접속 코드가 올바르지 않습니다.' });
+      globalFails = globalFails.filter((t) => now - t < GLOBAL_WINDOW_MS);
+      globalFails.push(now);
+      if (globalFails.length >= GLOBAL_MAX_FAILS) {
+        globalFails = [];
+        globalLockedUntil = now + GLOBAL_WINDOW_MS;
+      }
+      return res.status(401).json({ error: '편집 코드가 올바르지 않습니다.' });
     }
 
     attempts.delete(ip);
@@ -120,19 +130,12 @@ function createAuth({ accessCode, viewCode, secret, secureCookie }) {
     res.json({ ok: true });
   }
 
-  function requireAuth(req, res, next) {
-    if (isAuthed(req)) return next();
-    return res.status(401).json({ error: '접속 코드를 먼저 입력해 주세요.' });
-  }
-
   function requireEditor(req, res, next) {
-    const role = roleFromReq(req);
-    if (role === 'edit') return next();
-    if (role) return res.status(403).json({ error: '보기 전용 접속입니다. 등록·수정은 편집 코드로 접속해 주세요.' });
-    return res.status(401).json({ error: '접속 코드를 먼저 입력해 주세요.' });
+    if (canEdit(req)) return next();
+    return res.status(401).json({ error: '편집 코드를 먼저 입력해 주세요.' });
   }
 
-  return { login, logout, requireAuth, requireEditor, isAuthed, canEdit };
+  return { login, logout, requireEditor, isAuthed, canEdit };
 }
 
 /**

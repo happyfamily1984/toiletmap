@@ -107,7 +107,6 @@ input, textarea { font: inherit; }
   position: absolute; right: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5;
   display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
 }
-.fab-row { display: flex; align-items: center; gap: 10px; }
 .add-btn {
   border: 0; border-radius: 999px; padding: 13px 18px;
   background: var(--brand); color: #fff; font-weight: 700; font-size: 15px;
@@ -115,6 +114,7 @@ input, textarea { font: inherit; }
 }
 .add-btn:active { background: var(--brand-dark); }
 .add-btn.active { background: #ff8a00; }
+.locate-btn { position: absolute; left: 12px; bottom: calc(24px + var(--safe-bottom)); z-index: 5; }
 .fab {
   width: 48px; height: 48px; border-radius: 50%; border: 0;
   background: var(--surface); box-shadow: var(--shadow); font-size: 22px; color: var(--brand-dark);
@@ -210,7 +210,7 @@ input, textarea { font: inherit; }
   display: flex; justify-content: center; overflow: hidden;
 }
 .main.has-ad .map { height: calc(100% - 50px - var(--safe-bottom)); }
-.main.has-ad .fabs { bottom: calc(74px + var(--safe-bottom)); }
+.main.has-ad .fabs, .main.has-ad .locate-btn { bottom: calc(74px + var(--safe-bottom)); }
 
 /* ---------- 별점 ---------- */
 .label-stars { font-size: 11px; color: #f5a400; letter-spacing: -0.5px; line-height: 1.2; }

@@ -25,7 +25,6 @@ async function startServer(backend, extra = {}) {
   }
   const app = createApp({
     accessCode: '4821',
-    viewCode: '0000',
     sessionSecret: 'test-secret',
     naverClientId: 'test-client',
     secureCookie: false,
@@ -68,12 +67,14 @@ const sample = {
 };
 
 for (const backend of BACKENDS) {
-  test(`[${backend}] 접속 코드 없이 화장실 목록 조회 불가`, async () => {
+  test(`[${backend}] 코드 없이도 보기 가능, 등록은 편집 코드 필요`, async () => {
     const { server, call } = await startServer(backend);
     try {
       const res = await call('GET', '/api/toilets');
-      assert.strictEqual(res.status, 401);
-      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 401);
+      assert.strictEqual(res.status, 200);
+      assert.deepStrictEqual((await call('GET', '/api/session')).body, { authed: false, canEdit: false });
+      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
+      assert.strictEqual((await call('POST', '/api/toilets', sample)).status, 401);
       const cfg = await call('GET', '/api/config');
       assert.strictEqual(cfg.body.naverClientId, 'test-client');
     } finally {
@@ -144,26 +145,37 @@ for (const backend of BACKENDS) {
     }
   });
 
-  test(`[${backend}] 보기 전용 코드: 조회만 가능, 등록/수정/삭제 불가`, async () => {
+  test(`[${backend}] 편집 코드 없으면 수정·삭제 불가 (예전 보기 코드 0000 도 불가)`, async () => {
     const { server, call } = await startServer(backend);
     try {
-      // 편집 코드로 하나 등록
       const login = await call('POST', '/api/login', { code: '4821' });
       assert.strictEqual(login.body.canEdit, true);
       assert.strictEqual((await call('GET', '/api/session')).body.canEdit, true);
       const id = (await call('POST', '/api/toilets', sample)).body.toilet.id;
-      // 보기 코드로 다시 접속
-      const view = await call('POST', '/api/login', { code: '0000' });
-      assert.strictEqual(view.status, 200);
-      assert.strictEqual(view.body.canEdit, false);
-      const session = (await call('GET', '/api/session')).body;
-      assert.deepStrictEqual(session, { authed: true, canEdit: false });
+      await call('POST', '/api/logout');
+      assert.strictEqual((await call('POST', '/api/login', { code: '0000' })).status, 401);
+      assert.deepStrictEqual((await call('GET', '/api/session')).body, { authed: false, canEdit: false });
       assert.strictEqual((await call('GET', '/api/toilets')).body.toilets.length, 1);
-      assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
-      assert.strictEqual((await call('POST', '/api/toilets', sample)).status, 403);
-      assert.strictEqual((await call('PUT', `/api/toilets/${id}`, { rating: 5 })).status, 403);
-      assert.strictEqual((await call('DELETE', `/api/toilets/${id}`)).status, 403);
+      assert.strictEqual((await call('POST', '/api/toilets', sample)).status, 401);
+      assert.strictEqual((await call('PUT', `/api/toilets/${id}`, { rating: 5 })).status, 401);
+      assert.strictEqual((await call('DELETE', `/api/toilets/${id}`)).status, 401);
       assert.strictEqual((await call('GET', '/api/toilets')).body.toilets[0].rating, 3);
+    } finally {
+      server.close();
+    }
+  });
+
+  test(`[${backend}] 여러 IP 로 나눠 시도해도 전체 실패 30회면 잠금`, async () => {
+    const { server } = await startServer(backend, { trustProxy: true });
+    try {
+      const base = `http://127.0.0.1:${server.address().port}`;
+      const login = (code, ip) => fetch(base + '/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
+        body: JSON.stringify({ code }),
+      }).then((r) => r.status);
+      for (let i = 0; i < 30; i++) assert.strictEqual(await login('1111', `10.0.${i}.1`), 401);
+      assert.strictEqual(await login('4821', '10.9.9.9'), 429);
     } finally {
       server.close();
     }
@@ -173,9 +185,7 @@ for (const backend of BACKENDS) {
     const { server, call } = await startServer(backend);
     try {
       const form = { name: '홍길동', phone: '010-1234-5678', zone: '동안A', weeklyCount: '250', message: '주말 위주' };
-      // 접속 코드 없이는 제출 불가
-      assert.strictEqual((await call('POST', '/api/applications', form)).status, 401);
-      await call('POST', '/api/login', { code: '0000' }); // 보기 전용 멤버도 신청 가능
+      // 로그인 없이 누구나 제출 가능
       assert.strictEqual((await call('POST', '/api/applications', { ...form, name: '' })).status, 400);
       assert.strictEqual((await call('POST', '/api/applications', { ...form, phone: '12' })).status, 400);
       assert.strictEqual((await call('POST', '/api/applications', { ...form, zone: '서울' })).status, 400);

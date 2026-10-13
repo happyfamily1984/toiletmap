@@ -21,16 +21,17 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <!-- 접속 코드 화면 -->
-  <section id="login" class="login" hidden>
+  <!-- 편집 코드 입력 (화장실 등록·수정할 때만, 지도 위에 뜸) -->
+  <section id="login" class="login" hidden role="dialog" aria-modal="true" aria-labelledby="login-title">
+    <button id="login-close" class="login-close" type="button" aria-label="닫기">✕</button>
     <div class="login-inner">
-      <img class="login-logo" src="/icons/icon-192.png" alt="" width="72" height="72" />
-      <h1>안양 과천 화장실맵</h1>
-      <p class="login-sub">접속 코드 4자리를 입력하세요</p>
+      <img class="login-logo" src="/icons/icon-192.png" alt="" width="64" height="64" />
+      <h1 id="login-title">편집 코드 입력</h1>
+      <p class="login-sub">화장실을 등록·수정하려면 코드 4자리를 입력하세요</p>
       <div class="pin-dots" aria-hidden="true">
         <span></span><span></span><span></span><span></span>
       </div>
-      <input id="pin-input" class="sr-only" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="접속 코드" />
+      <input id="pin-input" class="sr-only" type="tel" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="편집 코드" />
       <p id="login-error" class="login-error" role="alert"></p>
       <div class="keypad">
         <button type="button" data-key="1">1</button>
@@ -62,7 +63,8 @@
         <button type="button" data-region="anyang">안양으로 이동</button>
         <button type="button" data-region="uiwang">의왕으로 이동</button>
         <button type="button" id="admin-btn">관리자</button>
-        <button type="button" id="logout-btn">로그아웃</button>
+        <a class="menu-link" href="/privacy.html" target="_blank" rel="noopener">개인정보처리방침</a>
+        <button type="button" id="logout-btn" hidden>편집 모드 끝내기</button>
         <div class="menu-credit">권역 경계: 통계청 SGIS(공공누리 제1유형), vuski/admdongkor<br>걷는 길 경로: © OpenStreetMap contributors, FOSSGIS 경로 서비스</div>
       </div>
     </header>

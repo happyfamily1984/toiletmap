@@ -41,22 +41,41 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build APK
+      - name: Decode upload keystore
+        # 플레이스토어 업로드 키: Settings > Secrets and variables > Actions > Secrets 에
+        # ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD 를 넣으면 그 키로 서명
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          else
+            echo "업로드 키가 없어 디버그 키로 서명합니다 (플레이스토어 업로드 불가)"
+          fi
+      - name: Build APK and AAB
         # 저장소 Settings > Secrets and variables > Actions > Variables 에 WEB_URL 을 넣으면 그 주소로 빌드됨
         env:
           WEB_URL: ${{ vars.WEB_URL }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          if [ -n "$WEB_URL" ]; then
-            ./gradlew assembleRelease "-Ptoiletmap.webUrl=$WEB_URL" "-Ptoiletmap.versionCode=${{ github.run_number }}"
-          else
-            ./gradlew assembleRelease "-Ptoiletmap.versionCode=${{ github.run_number }}"
-          fi
+          ARGS="-Ptoiletmap.versionCode=${{ github.run_number }}"
+          if [ -n "$WEB_URL" ]; then ARGS="$ARGS -Ptoiletmap.webUrl=$WEB_URL"; fi
+          ./gradlew assembleRelease bundleRelease $ARGS
           cp app/build/outputs/apk/release/app-release.apk salddeul-toiletmap.apk
+          cp app/build/outputs/bundle/release/app-release.aab salddeul-toiletmap.aab
       - uses: actions/upload-artifact@v4
         with:
           name: salddeul-toiletmap-apk
           path: android/salddeul-toiletmap.apk
+      - uses: actions/upload-artifact@v4
+        # 플레이스토어 업로드용 (Play Console > 프로덕션/테스트 > 새 버전 만들기 에 이 .aab 업로드)
+        with:
+          name: salddeul-toiletmap-aab
+          path: android/salddeul-toiletmap.aab
       - name: Publish APK release (main only)
         # 멤버 배포용 고정 링크:
         # https://github.com/<owner>/<repo>/releases/latest/download/salddeul-toiletmap.apk

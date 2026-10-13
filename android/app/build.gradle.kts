@@ -11,14 +11,17 @@ val webUrl: String = (findProperty("toiletmap.webUrl") as String?)
 // CI 에서 -Ptoiletmap.versionCode=<빌드번호> 로 올려서 새 APK 가 업데이트로 인식되게 함
 val appVersionCode: Int = (findProperty("toiletmap.versionCode") as String?)?.toIntOrNull() ?: 1
 
+// 플레이스토어 업로드용 서명 키 (CI 의 GitHub Secrets 에서 환경변수로 받음). 없으면 디버그 키로 서명
+val uploadKeystore: String? = System.getenv("ANDROID_KEYSTORE_FILE")?.takeIf { file(it).exists() }
+
 android {
     namespace = "com.salddeul.toiletmap"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.salddeul.toiletmap"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = "1.0.$appVersionCode"
         buildConfigField("String", "WEB_URL", "\"$webUrl\"")
@@ -28,11 +31,25 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (uploadKeystore != null) {
+            create("upload") {
+                storeFile = file(uploadKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            // 서명 설정 전에는 디버그 키로 서명 (스토어 배포 시 교체)
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (uploadKeystore != null) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

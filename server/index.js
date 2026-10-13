@@ -7,19 +7,12 @@ const { createStore } = require('./store');
 
 const env = process.env;
 
-// 기본 접속 코드는 6511 (ACCESS_CODE 환경변수로 변경 가능)
+// 화장실 등록·수정용 편집 코드. 기본 6511 (ACCESS_CODE 환경변수로 변경 가능)
+// 저장소가 공개라면 Render 환경변수 ACCESS_CODE 로 다른 번호를 쓰는 것을 권장
 const DEFAULT_ACCESS_CODE = '6511';
 const accessCode = env.ACCESS_CODE || DEFAULT_ACCESS_CODE;
 if (!/^\d{4}$/.test(accessCode)) {
   console.error('ACCESS_CODE 는 4자리 숫자여야 합니다. (예: ACCESS_CODE=6511)');
-  process.exit(1);
-}
-
-// 보기 전용 코드는 0000 (VIEW_CODE 로 변경, VIEW_CODE=off 면 보기 전용 접속 끔)
-const DEFAULT_VIEW_CODE = '0000';
-const viewCode = env.VIEW_CODE === 'off' ? '' : env.VIEW_CODE || DEFAULT_VIEW_CODE;
-if (viewCode && (!/^\d{4}$/.test(viewCode) || viewCode === accessCode)) {
-  console.error('VIEW_CODE 는 ACCESS_CODE 와 다른 4자리 숫자여야 합니다. (예: VIEW_CODE=0000)');
   process.exit(1);
 }
 
@@ -44,7 +37,6 @@ const store = createStore({
 
 const config = {
   accessCode,
-  viewCode,
   // 관리자 비밀번호(가입신청 확인용). 공개 저장소이므로 코드에 넣지 않고 환경변수로만 설정
   adminPassword: env.ADMIN_PASSWORD || '',
   sessionSecret,

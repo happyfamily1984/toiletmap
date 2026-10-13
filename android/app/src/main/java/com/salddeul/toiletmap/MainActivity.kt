@@ -19,16 +19,20 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 
 /**
  * 안양 과천 화장실맵 모바일 웹페이지를 바로 열어주는 앱.
- * 실제 기능(지도, 접속 코드, 화장실 등록)은 모두 웹페이지에 있다.
+ * 실제 기능(지도, 편집 코드, 화장실 등록)은 모두 웹페이지에 있다.
  */
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private val homeUrl: String = BuildConfig.WEB_URL
     private val homeHost: String? = Uri.parse(homeUrl).host
+
+    private var backCallback: OnBackInvokedCallback? = null
 
     // 웹페이지가 위치 권한을 요청했을 때 안드로이드 권한 응답을 기다리는 동안 보관
     private var pendingGeoOrigin: String? = null
@@ -103,6 +107,15 @@ class MainActivity : Activity() {
             }
         }
 
+        // Android 13+ (targetSdk 36 부터 필수): 새 뒤로가기 방식. onBackPressed 는 더 이상 불리지 않음
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            backCallback = OnBackInvokedCallback { handleBack() }.also {
+                onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, it
+                )
+            }
+        }
+
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState)
         } else {
@@ -110,7 +123,7 @@ class MainActivity : Activity() {
         }
     }
 
-    /** targetSdk 35 의 edge-to-edge 화면에서 상태바/내비게이션바에 웹페이지가 가려지지 않게 한다. */
+    /** targetSdk 35+ 의 edge-to-edge 화면에서 상태바/내비게이션바에 웹페이지가 가려지지 않게 한다. */
     private fun applySystemBarInsets(root: View) {
         root.setOnApplyWindowInsetsListener { v, insets ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -170,19 +183,19 @@ class MainActivity : Activity() {
         webView.loadDataWithBaseURL(homeUrl, html, "text/html", "utf-8", null)
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        // 웹페이지에 열린 시트/메뉴가 있으면 먼저 닫고, 없으면 뒤로가기 또는 앱 종료
+    /** 웹페이지에 열린 창/메뉴가 있으면 먼저 닫고, 없으면 이전 페이지 또는 앱 종료 */
+    private fun handleBack() {
         webView.evaluateJavascript("(window.toiletmapBack ? window.toiletmapBack() : false)") { result ->
             if (result != "true") {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    @Suppress("DEPRECATION")
-                    super.onBackPressed()
-                }
+                if (webView.canGoBack()) webView.goBack() else finish()
             }
         }
+    }
+
+    // Android 12 이하
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        handleBack()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -196,13 +209,16 @@ class MainActivity : Activity() {
     }
 
     override fun onPause() {
-        // 접속 코드 로그인 쿠키를 디스크에 저장
+        // 편집 코드 로그인 쿠키를 디스크에 저장
         CookieManager.getInstance().flush()
         webView.onPause()
         super.onPause()
     }
 
     override fun onDestroy() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
+        }
         webView.destroy()
         super.onDestroy()
     }

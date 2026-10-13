@@ -13,7 +13,6 @@ function createApp(config, store) {
   const app = express();
   const auth = createAuth({
     accessCode: config.accessCode,
-    viewCode: config.viewCode,
     secret: config.sessionSecret,
     secureCookie: config.secureCookie,
   });
@@ -52,8 +51,8 @@ function createApp(config, store) {
   app.post('/api/login', auth.login);
   app.post('/api/logout', auth.logout);
 
-  // ---- 로그인 필요 API ----
-  app.get('/api/toilets', auth.requireAuth, wrap(async (req, res) => {
+  // 화장실 목록은 누구나 볼 수 있음 (등록·수정·삭제만 편집 코드 필요)
+  app.get('/api/toilets', wrap(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ toilets: await store.list() });
   }));
@@ -79,19 +78,19 @@ function createApp(config, store) {
     res.json({ ok: true });
   }));
 
-  // 프로모션 전단지 이미지 (접속 코드 입력한 멤버만)
+  // 프로모션 전단지 이미지 (공개)
   const PROMO_DIR = path.join(__dirname, 'promo');
-  app.get('/api/promo/:file', auth.requireAuth, (req, res) => {
+  app.get('/api/promo/:file', (req, res) => {
     const file = req.params.file;
     if (!/^[a-z0-9-]+\.(jpg|png)$/.test(file)) return res.status(404).json({ error: 'Not found' });
-    res.setHeader('Cache-Control', 'private, max-age=600');
+    res.setHeader('Cache-Control', 'public, max-age=600');
     res.sendFile(path.join(PROMO_DIR, file), (err) => {
       if (err && !res.headersSent) res.status(404).json({ error: 'Not found' });
     });
   });
 
-  // ---- 가입신청 (멤버라면 누구나 제출) ----
-  app.post('/api/applications', auth.requireAuth, wrap(async (req, res) => {
+  // ---- 가입신청 (누구나 제출, IP 당 1시간 5건) ----
+  app.post('/api/applications', wrap(async (req, res) => {
     const { error, value } = validateApplication(req.body || {});
     if (error) return res.status(400).json({ error });
     const ip = req.ip || 'unknown';

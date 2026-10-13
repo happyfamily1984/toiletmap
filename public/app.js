@@ -27,7 +27,8 @@
     routeLine: null,   // 내 근처: 경로 선
     labelMode: false,
     addMode: false,
-    canEdit: false,    // 편집 코드(6511)로 접속했을 때만 true. 보기 코드(0000)는 false
+    canEdit: false,    // 편집 코드를 입력했을 때만 true (보기는 누구나 가능)
+    afterLogin: null,  // 편집 코드 입력 후 이어서 할 일 (예: 등록 모드)
   };
 
   // ---------------- 공통 ----------------
@@ -45,8 +46,9 @@
       body: body ? JSON.stringify(body) : undefined,
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (data) {
-        // 관리자 API 의 401 은 멤버 로그아웃이 아님 (관리자 비밀번호만 다시 입력)
+        // 편집 API 의 401 = 편집 코드가 만료됨 → 다시 입력 (관리자 API 는 관리자 비밀번호만 다시 입력)
         if (res.status === 401 && url !== '/api/login' && url.indexOf('/api/admin/') !== 0) {
+          applyRole(false);
           showLogin();
         }
         if (!res.ok) {
@@ -79,7 +81,7 @@
     return lat >= b.minLat && lat <= b.maxLat && lng >= b.minLng && lng <= b.maxLng;
   }
 
-  // ---------------- 접속 코드 ----------------
+  // ---------------- 편집 코드 (보기는 누구나, 등록·수정만 코드 필요) ----------------
   var pin = '';
   var loginBusy = false;
 
@@ -108,7 +110,11 @@
       .then(function (data) {
         pin = '';
         renderPin();
-        showMain(!!data.canEdit);
+        var next = state.afterLogin;
+        hideLogin();
+        applyRole(!!data.canEdit);
+        toast('편집 모드로 들어왔어요');
+        if (next) next();
       })
       .catch(function (err) {
         pin = '';
@@ -131,13 +137,24 @@
       if ($('login').hidden) return;
       if (/^\d$/.test(e.key)) pressKey(e.key);
       else if (e.key === 'Backspace') pressKey('back');
+      else if (e.key === 'Escape') hideLogin();
     });
+    $('login-close').addEventListener('click', hideLogin);
   }
 
-  function showLogin() {
+  // 편집 코드 입력창 (지도 위에 뜸). then: 코드가 맞으면 이어서 할 일
+  function showLogin(then) {
     closeSheet();
-    $('main').hidden = true;
+    pin = '';
+    renderPin();
+    $('login-error').textContent = '';
+    state.afterLogin = then || null;
     $('login').hidden = false;
+  }
+
+  function hideLogin() {
+    state.afterLogin = null;
+    $('login').hidden = true;
   }
 
   // ---------------- 지도 ----------------
@@ -431,11 +448,12 @@
             '<button type="button" class="btn danger" data-act="delete">삭제</button>' +
             '<button type="button" class="btn primary" data-act="edit">수정</button>' +
           '</div>'
-        : '<p class="view-only">보기 전용 접속이라 수정할 수 없어요</p>')
+        : '<div class="actions"><button type="button" class="btn" data-act="login">🔒 편집 코드 입력 후 수정</button></div>')
     );
     $('sheet-body').onclick = function (e) {
       var btn = e.target.closest('button[data-act]');
       if (!btn) return;
+      if (btn.getAttribute('data-act') === 'login') showLogin(function () { showDetail(t); });
       if (btn.getAttribute('data-act') === 'edit') showForm(t);
       if (btn.getAttribute('data-act') === 'delete') deleteToilet(t);
     };
@@ -907,6 +925,7 @@
 
   // 안드로이드 앱의 뒤로가기 버튼: 열린 시트/메뉴를 먼저 닫는다
   window.toiletmapBack = function () {
+    if (!$('login').hidden) { hideLogin(); return true; }
     if (!$('promo').hidden) { $('promo').hidden = true; return true; }
     if (!$('sheet').hidden) { closeSheet(); return true; }
     if (state.addMode) { setAddMode(false); return true; }
@@ -1031,7 +1050,10 @@
       });
     });
     $('add-btn').addEventListener('click', function () {
-      if (state.map) setAddMode(!state.addMode);
+      if (!state.map) return;
+      // 등록은 편집 코드가 필요: 코드 입력 후 바로 등록 모드로
+      if (!state.canEdit) return showLogin(function () { setAddMode(true); });
+      setAddMode(!state.addMode);
     });
     $('sheet-backdrop').addEventListener('click', closeSheet);
     $('menu-btn').addEventListener('click', function () {
@@ -1048,7 +1070,8 @@
       }
       if (btn.id === 'admin-btn') openAdmin();
       if (btn.id === 'logout-btn') {
-        api('POST', '/api/logout').then(showLogin, showLogin);
+        var done = function () { applyRole(false); toast('편집 모드를 끝냈어요'); };
+        api('POST', '/api/logout').then(done, done);
       }
     });
     document.addEventListener('keydown', function (e) {
@@ -1082,19 +1105,18 @@
   // 편집 권한에 따라 등록 버튼과 안내 문구를 바꾼다
   function applyRole(canEdit) {
     state.canEdit = canEdit;
-    $('add-btn').hidden = !canEdit;
+    $('logout-btn').hidden = !canEdit;
     if (!canEdit && state.addMode) setAddMode(false);
     var hint = $('hint');
     if (!state.addMode) {
       hint.textContent = canEdit
         ? '＋ 화장실 등록 버튼을 눌러 화장실을 추가할 수 있어요'
-        : '보기 전용으로 접속했어요';
+        : '지도를 확대하면 화장실 이름과 비밀번호가 보여요';
     }
   }
 
   function showMain(canEdit) {
     applyRole(!!canEdit);
-    $('login').hidden = true;
     $('main').hidden = false;
     showAd();
     if (!mapReady) {
@@ -1128,7 +1150,7 @@
           fatal('서버에 NAVER_MAP_CLIENT_ID 가 설정되지 않았습니다.');
           return;
         }
-        if (r[1].authed) showMain(r[1].canEdit); else showLogin();
+        showMain(r[1].canEdit); // 보기는 누구나
       })
       .catch(function () {
         fatal('서버에 연결할 수 없습니다.<br>인터넷 연결을 확인해 주세요.');

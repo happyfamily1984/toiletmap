@@ -75,6 +75,9 @@ for (const backend of BACKENDS) {
       assert.deepStrictEqual((await call('GET', '/api/session')).body, { authed: false, canEdit: false });
       assert.strictEqual((await call('GET', '/api/promo/gwacheon-b.jpg')).status, 200);
       assert.strictEqual((await call('POST', '/api/toilets', sample)).status, 401);
+      // AdMob 광고 판매자 확인 파일
+      const adsTxt = await fetch(`http://127.0.0.1:${server.address().port}/app-ads.txt`).then((r) => r.text());
+      assert.match(adsTxt, /google\.com, pub-\d+, DIRECT/);
       const cfg = await call('GET', '/api/config');
       assert.strictEqual(cfg.body.naverClientId, 'test-client');
     } finally {

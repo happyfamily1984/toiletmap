@@ -19,8 +19,16 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 안양 과천 화장실맵 모바일 웹페이지를 바로 열어주는 앱.
@@ -29,6 +37,9 @@ import android.window.OnBackInvokedDispatcher
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
+    private lateinit var adContainer: FrameLayout
+    private var adView: AdView? = null
+    private val adsStarted = AtomicBoolean(false)
     private val homeUrl: String = BuildConfig.WEB_URL
     private val homeHost: String? = Uri.parse(homeUrl).host
 
@@ -42,17 +53,18 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val root = FrameLayout(this)
+        // 위: 웹페이지(지도), 아래: 광고 배너
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         webView = WebView(this)
+        root.addView(webView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        adContainer = FrameLayout(this)
         root.addView(
-            webView,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+            adContainer,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         )
         setContentView(root)
         applySystemBarInsets(root)
+        setupAds()
 
         CookieManager.getInstance().setAcceptCookie(true)
 
@@ -120,6 +132,41 @@ class MainActivity : Activity() {
             webView.restoreState(savedInstanceState)
         } else {
             webView.loadUrl(homeUrl)
+        }
+    }
+
+    /**
+     * Google AdMob 하단 배너. 유럽 등 동의가 필요한 지역이면 먼저 동의 화면(UMP)을 띄운다.
+     * 동의 확인이 실패해도 광고 요청이 허용되면 광고를 띄운다.
+     */
+    private fun setupAds() {
+        val consent = UserMessagingPlatform.getConsentInformation(this)
+        consent.requestConsentInfoUpdate(
+            this,
+            ConsentRequestParameters.Builder().build(),
+            {
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) {
+                    if (consent.canRequestAds()) startAds()
+                }
+            },
+            { if (consent.canRequestAds()) startAds() }
+        )
+        if (consent.canRequestAds()) startAds()
+    }
+
+    private fun startAds() {
+        if (!adsStarted.compareAndSet(false, true)) return
+        Thread { MobileAds.initialize(this) {} }.start()
+        adContainer.post {
+            val density = resources.displayMetrics.density
+            val widthDp = (adContainer.width.takeIf { it > 0 } ?: resources.displayMetrics.widthPixels) / density
+            val view = AdView(this).apply {
+                adUnitId = if (BuildConfig.DEBUG) TEST_BANNER_ID else BuildConfig.ADMOB_BANNER_ID
+                setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity, widthDp.toInt()))
+            }
+            adView = view
+            adContainer.addView(view)
+            view.loadAd(AdRequest.Builder().build())
         }
     }
 
@@ -205,12 +252,14 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        adView?.resume()
         webView.onResume()
     }
 
     override fun onPause() {
         // 편집 코드 로그인 쿠키를 디스크에 저장
         CookieManager.getInstance().flush()
+        adView?.pause()
         webView.onPause()
         super.onPause()
     }
@@ -219,11 +268,14 @@ class MainActivity : Activity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             backCallback?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         }
+        adView?.destroy()
         webView.destroy()
         super.onDestroy()
     }
 
     companion object {
         private const val REQ_LOCATION = 1001
+        // 개발용(디버그 빌드) 테스트 광고 ID — 실제 앱(release)은 BuildConfig.ADMOB_BANNER_ID 사용
+        private const val TEST_BANNER_ID = "ca-app-pub-3940256099942544/9214589741"
     }
 }

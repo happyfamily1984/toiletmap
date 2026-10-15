@@ -26,6 +26,9 @@ android {
         versionCode = appVersionCode
         versionName = "1.0.$appVersionCode"
         buildConfigField("String", "WEB_URL", "\"$webUrl\"")
+        // Google AdMob (공개 값, 비밀 아님)
+        manifestPlaceholders["admobAppId"] = "ca-app-pub-1743349770269440~3575670463"
+        buildConfigField("String", "ADMOB_BANNER_ID", "\"ca-app-pub-1743349770269440/4334218366\"")
     }
 
     buildFeatures {
@@ -61,4 +64,10 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+}
+
+dependencies {
+    // 하단 배너 광고 (Google AdMob) + 유럽 사용자 동의 화면(UMP)
+    implementation("com.google.android.gms:play-services-ads:23.6.0")
+    implementation("com.google.android.ump:user-messaging-platform:3.1.0")
 }

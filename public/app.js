@@ -5,11 +5,6 @@
   var LABEL_ZOOM = 17;
   // 이 줌 레벨 이상으로 확대해야 지도를 눌러 화장실을 등록할 수 있음
   var ADD_ZOOM = 16;
-  var REGIONS = {
-    gwacheon: { name: '과천', lat: 37.4292, lng: 126.9876 },
-    anyang: { name: '안양', lat: 37.3943, lng: 126.9568 },
-    uiwang: { name: '의왕', lat: 37.3447, lng: 126.9683 },
-  };
   var DEFAULT_CENTER = { lat: 37.412, lng: 126.968 };
 
   var $ = function (id) { return document.getElementById(id); };
@@ -32,6 +27,32 @@
   };
 
   // ---------------- 공통 ----------------
+  // 디자인 시안의 아이콘 (인라인 SVG)
+  var SVG = '<svg class="ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" ';
+  var STROKE = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">';
+  var ICON = {
+    wc: SVG + 'fill="currentColor"><circle cx="7" cy="4.6" r="2.1"/><path d="M5 8.2h4a1.2 1.2 0 0 1 1.2 1.2V15H8.7v6H5.3v-6H3.8V9.4A1.2 1.2 0 0 1 5 8.2z"/><rect x="11.4" y="3" width="1.2" height="18" rx=".6"/><circle cx="17" cy="4.6" r="2.1"/><path d="M15.1 8.2h3.8l2.4 7.3h-2.3V21h-1.7v-4.6h-.6V21H15v-5.5h-2.3z"/></svg>',
+    pin: SVG + 'fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>',
+    crown: SVG + 'fill="currentColor"><path d="M3 8l4.6 4L12 5l4.4 7L21 8l-2 10H5z"/></svg>',
+    star: SVG + 'fill="currentColor"><path d="M12 2.5l2.9 6.1 6.6.7-4.9 4.5 1.4 6.6L12 17l-6 3.4 1.4-6.6-4.9-4.5 6.6-.7z"/></svg>',
+    chat: SVG + 'fill="currentColor"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.4 1.2 4.6 3.1 6.1L4 21l4.1-2c1.2.4 2.5.6 3.9.6 5.5 0 10-3.8 10-8.5S17.5 3 12 3zM7.5 13a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>',
+    pencil: SVG + 'fill="currentColor"><path d="M3 17.3V21h3.7L17.8 9.9l-3.7-3.7zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.7 3.7z"/></svg>',
+    lock: SVG + 'fill="currentColor"><path d="M17 9V7A5 5 0 0 0 7 7v2a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2zm-5 8.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM9 9V7a3 3 0 0 1 6 0v2z"/></svg>',
+    note: SVG + 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/></svg>',
+    chev: SVG + STROKE + '<path d="M9 6l6 6-6 6"/></svg>',
+    check: SVG + 'fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    x: SVG + STROKE + '<path d="M6 6l12 12M18 6 6 18"/></svg>',
+    plus: SVG + 'fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    minus: SVG + 'fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+  };
+
+  // 바텀시트 머리: 초록 원 아이콘 + 제목 + 닫기
+  function sheetHead(title, icon) {
+    return '<div class="sheet-head"><span class="sheet-logo">' + (icon || ICON.wc) + '</span>' +
+      '<h2>' + title + '</h2>' +
+      '<button type="button" class="sheet-x" data-act="close" aria-label="닫기">' + ICON.x + '</button></div>';
+  }
+
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -62,9 +83,9 @@
   }
 
   var toastTimer;
-  function toast(msg) {
+  function toast(msg, icon) {
     var el = $('toast');
-    el.textContent = msg;
+    el.innerHTML = (icon ? ICON[icon] : '') + '<span>' + escapeHtml(msg) + '</span>';
     el.hidden = false;
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.hidden = true; }, 2600);
@@ -367,7 +388,7 @@
     state.addMode = on;
     var btn = $('add-btn');
     btn.classList.toggle('active', on);
-    btn.textContent = on ? '✕ 등록 취소' : '＋ 화장실 등록';
+    btn.innerHTML = on ? ICON.x + '등록 취소' : ICON.plus + '화장실 등록';
     if (!on) clearTempMarker();
     updateAddHint();
   }
@@ -433,11 +454,11 @@
   function showDetail(t) {
     clearTempMarker();
     openSheet(
-      '<h2>' + escapeHtml(t.name) + '</h2>' +
+      sheetHead(escapeHtml(t.name)) +
       '<div class="stars">' + starsText(ratingOf(t)) + '</div>' +
-      '<p class="address">' + escapeHtml(t.address || '주소 정보 없음') + '</p>' +
+      '<div class="addr-box">' + ICON.pin + '<span>' + escapeHtml(t.address || '주소 정보 없음') + '</span></div>' +
       '<div class="pw-box' + (t.password ? '' : ' none') + '">' +
-        '<div><div class="k">비밀번호</div><div class="v">' +
+        '<div><div class="k">' + ICON.lock + '비밀번호</div><div class="v">' +
           escapeHtml(t.password || '없음 / 개방') + '</div></div>' +
       '</div>' +
       '<p class="desc' + (t.description ? '' : ' none') + '">' +
@@ -446,13 +467,14 @@
       (state.canEdit
         ? '<div class="actions">' +
             '<button type="button" class="btn danger" data-act="delete">삭제</button>' +
-            '<button type="button" class="btn primary" data-act="edit">수정</button>' +
+            '<button type="button" class="btn primary" data-act="edit">' + ICON.pencil + '수정</button>' +
           '</div>'
-        : '<div class="actions"><button type="button" class="btn" data-act="login">🔒 편집 코드 입력 후 수정</button></div>')
+        : '<div class="actions"><button type="button" class="btn" data-act="login">' + ICON.lock + '편집 코드 입력 후 수정</button></div>')
     );
     $('sheet-body').onclick = function (e) {
       var btn = e.target.closest('button[data-act]');
       if (!btn) return;
+      if (btn.getAttribute('data-act') === 'close') closeSheet();
       if (btn.getAttribute('data-act') === 'login') showLogin(function () { showDetail(t); });
       if (btn.getAttribute('data-act') === 'edit') showForm(t);
       if (btn.getAttribute('data-act') === 'delete') deleteToilet(t);
@@ -462,28 +484,35 @@
   function showForm(t) {
     var editing = !!t.id;
     openSheet(
-      '<h2>' + (editing ? '화장실 정보 수정' : '화장실 등록') + '</h2>' +
-      '<form id="toilet-form" autocomplete="off">' +
-        '<label class="field"><span>주소</span>' +
-          '<input name="address" maxlength="120" value="' + escapeHtml(t.address) + '" placeholder="주소" /></label>' +
-        '<label class="field"><span>화장실 이름 (비워두면 \'화장실\')</span>' +
-          '<input name="name" maxlength="40" value="' + escapeHtml(t.name) + '" placeholder="예: ○○빌딩 2층 화장실" /></label>' +
-        '<div class="field"><span>별점</span>' +
-          '<div class="star-pick" id="star-pick">' +
+      sheetHead(editing ? '화장실 정보 수정' : '화장실 등록') +
+      '<form id="toilet-form" class="pretty" autocomplete="off">' +
+        '<label class="field"><span class="lbl">' + ICON.pin + '주소</span>' +
+          '<span class="inp gray">' + ICON.pin +
+          '<input name="address" maxlength="120" value="' + escapeHtml(t.address) + '" placeholder="주소" />' +
+          ICON.chev + '</span></label>' +
+        '<label class="field"><span class="lbl">' + ICON.crown + '화장실 이름 <small>(비워두면 \'화장실\')</small></span>' +
+          '<span class="inp"><input name="name" maxlength="40" value="' + escapeHtml(t.name) + '" placeholder="예: ○○빌딩 2층 화장실" /></span></label>' +
+        '<div class="field"><span class="lbl">' + ICON.star + '별점</span>' +
+          '<div class="star-row"><div class="star-pick" id="star-pick">' +
             [1, 2, 3, 4, 5].map(function (n) {
-              return '<button type="button" data-star="' + n + '" aria-label="별 ' + n + '개">★</button>';
+              return '<button type="button" data-star="' + n + '" aria-label="별 ' + n + '개">' + ICON.star + '</button>';
             }).join('') +
-          '</div>' +
+          '</div><div class="star-step">' +
+            '<button type="button" data-step="1" aria-label="별 하나 더">' + ICON.plus + '</button>' +
+            '<button type="button" data-step="-1" aria-label="별 하나 빼기">' + ICON.minus + '</button>' +
+          '</div></div>' +
           '<input type="hidden" name="rating" value="' + ratingOf(t) + '" /></div>' +
-        '<label class="field"><span>비밀번호</span>' +
-          '<input name="password" maxlength="40" value="' + escapeHtml(t.password) + '" placeholder="예: 1234* (없으면 비워두세요)" /></label>' +
-        '<label class="field"><span>설명</span>' +
+        '<label class="field"><span class="lbl">' + ICON.chat + '비밀번호</span>' +
+          '<span class="inp">' + ICON.lock +
+          '<input name="password" maxlength="40" value="' + escapeHtml(t.password) + '" placeholder="예: 1234* (없으면 비워두세요)" /></span></label>' +
+        '<label class="field"><span class="lbl">' + ICON.pencil + '설명</span>' +
+          '<span class="inp area">' + ICON.note +
           '<textarea name="description" maxlength="500" placeholder="위치, 이용 시간, 청결도 등">' +
-            escapeHtml(t.description) + '</textarea></label>' +
+            escapeHtml(t.description) + '</textarea></span></label>' +
         '<p class="form-error" id="form-error"></p>' +
         '<div class="actions">' +
           '<button type="button" class="btn" data-act="cancel">취소</button>' +
-          '<button type="submit" class="btn primary">저장</button>' +
+          '<button type="submit" class="btn primary">' + ICON.check + '저장</button>' +
         '</div>' +
       '</form>'
     );
@@ -499,6 +528,18 @@
       if (star) {
         form.elements.rating.value = star.getAttribute('data-star');
         paintStars();
+        return;
+      }
+      var step = e.target.closest('button[data-step]');
+      if (step) {
+        var r = Number(form.elements.rating.value) + Number(step.getAttribute('data-step'));
+        form.elements.rating.value = Math.min(5, Math.max(1, r));
+        paintStars();
+        return;
+      }
+      if (e.target.closest('button[data-act="close"]')) {
+        if (editing) showDetail(findToilet(t.id) || t);
+        else closeSheet();
         return;
       }
       var btn = e.target.closest('button[data-act="cancel"]');
@@ -905,7 +946,7 @@
       var say = function (meters, viaRoad) {
         var walk = Math.max(1, Math.round(meters / 67)); // 걸음 약 4km/h
         toast('가장 가까운 화장실: ' + best.t.name + ' · ' + (viaRoad ? '' : '직선 ') +
-          formatDistance(meters) + ' (걸어서 약 ' + walk + '분)');
+          formatDistance(meters) + ' (걸어서 약 ' + walk + '분)', 'pin');
       };
 
       // 우선 직선 점선으로 바로 보여주고, 걷는 길 경로가 오면 바꿔 그림
@@ -1056,18 +1097,14 @@
       setAddMode(!state.addMode);
     });
     $('sheet-backdrop').addEventListener('click', closeSheet);
+    $('add-btn').innerHTML = ICON.plus + '화장실 등록';
     $('menu-btn').addEventListener('click', function () {
       $('menu').hidden = !$('menu').hidden;
     });
     $('menu').addEventListener('click', function (e) {
-      var btn = e.target.closest('button');
+      var btn = e.target.closest('button, a');
       if (!btn) return;
       $('menu').hidden = true;
-      var region = btn.getAttribute('data-region');
-      if (region && state.map) {
-        var r = REGIONS[region];
-        state.map.morph(new naver.maps.LatLng(r.lat, r.lng), 14);
-      }
       if (btn.id === 'admin-btn') openAdmin();
       if (btn.id === 'logout-btn') {
         var done = function () { applyRole(false); toast('편집 모드를 끝냈어요'); };

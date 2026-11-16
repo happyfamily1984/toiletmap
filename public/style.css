@@ -392,3 +392,161 @@ input, textarea { font: inherit; }
 .bm-btn.open { background: #fff; color: #1a9e99; box-shadow: inset 0 0 0 2px #2ac1bc, var(--shadow); }
 .bm-btn.open .arrow { transform: rotate(180deg); }
 .bm-btn:active { filter: brightness(1.08); }
+
+/* =========================================================
+   디자인 시안 적용 (2026-11): 둥근 알약 버튼, 아이콘, 카드 메뉴, 등록 시트
+   ========================================================= */
+:root {
+  --brand: #1aa564;
+  --brand-dark: #12804c;
+  --brand-grad: linear-gradient(135deg, #2ec77a 0%, #149457 100%);
+  --brand-soft: #e8f7ef;
+  --shadow: 0 6px 18px rgba(20, 40, 30, 0.16);
+}
+.ico { width: 22px; height: 22px; flex: none; display: block; }
+.ico.green { color: var(--brand); }
+
+/* 상단: 내 근처(흰 알약) + 메뉴(흰 사각) */
+.near-btn {
+  width: auto; height: 52px; padding: 0 20px 0 14px; border-radius: 999px;
+  flex-direction: row; gap: 6px; background: #fff; color: var(--brand-dark);
+  font-size: 17px; font-weight: 800; border: 2px solid #d9f0e3;
+}
+.near-btn .pin-emoji { font-size: 24px; line-height: 1; }
+.near-btn:active { background: var(--brand-soft); }
+.near-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); box-shadow: var(--shadow); }
+.icon-btn {
+  width: 54px; height: 54px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+  color: #1d2420;
+}
+.icon-btn .ico { width: 28px; height: 28px; }
+
+/* 메뉴: 카드 */
+.menu {
+  top: calc(74px + var(--safe-top)); width: min(320px, calc(100vw - 24px)); max-width: none;
+  border-radius: 22px; padding: 8px; box-shadow: 0 12px 32px rgba(20, 40, 30, 0.22);
+}
+.menu-head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 10px;
+  background: var(--brand-soft); border-radius: 16px; margin-bottom: 4px;
+}
+.menu-logo {
+  width: 42px; height: 42px; border-radius: 50%; background: var(--brand); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.menu-logo .ico { width: 26px; height: 26px; }
+.menu-title { flex: 1; padding: 0; border: 0; font-size: 19px; font-weight: 900; color: var(--brand-dark); }
+.menu .menu-close {
+  width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: #4a524e;
+}
+.menu .menu-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 15px 12px;
+  border: 0; border-bottom: 1px solid #eef1ef; background: none; color: #1d2420;
+  font-size: 17px; font-weight: 700; text-align: left; text-decoration: none;
+}
+.menu .menu-item span { flex: 1; }
+.menu .menu-item .chev { width: 18px; height: 18px; color: #8a938e; }
+.menu .menu-item:active { background: #f3f7f5; }
+.menu-credit {
+  display: flex; gap: 8px; align-items: flex-start; max-width: none; margin-top: 8px;
+  padding: 12px; border: 0; border-radius: 14px; background: var(--brand-soft);
+  font-size: 11.5px; line-height: 1.5; color: #55605a;
+}
+.menu-credit .ico { width: 18px; height: 18px; margin-top: 1px; }
+
+/* 안내 문구 / 토스트: 진한 알약 */
+.hint {
+  left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
+  top: calc(76px + var(--safe-top)); padding: 10px 18px; border-radius: 999px;
+  background: rgba(40, 44, 42, 0.86); font-size: 14px; font-weight: 600;
+}
+.hint.fade { opacity: 0; }
+.toast {
+  display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 26px;
+  background: rgba(40, 44, 42, 0.9); font-size: 15px; font-weight: 600; text-align: left;
+  top: calc(128px + var(--safe-top)); width: max-content; max-width: calc(100vw - 32px);
+}
+.toast .ico { width: 22px; height: 22px; color: #fff; }
+
+/* 오른쪽 아래: 배민플러스 / 화장실 등록, 왼쪽 아래: 내 위치 */
+.add-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 16px 26px;
+  background: var(--brand-grad); font-size: 18px; font-weight: 800;
+  box-shadow: 0 8px 20px rgba(20, 148, 87, 0.35);
+}
+.add-btn .ico { width: 22px; height: 22px; }
+.add-btn.active { background: linear-gradient(135deg, #ffa133 0%, #ff7a00 100%); box-shadow: 0 8px 20px rgba(255, 122, 0, 0.35); }
+.fab { width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; color: var(--brand-dark); }
+.fab .ico { width: 30px; height: 30px; }
+.bm-btn {
+  padding: 9px 16px; gap: 6px; font-size: 15px; background: #fff; color: #12a39c;
+  box-shadow: inset 0 0 0 2px #2ac1bc, var(--shadow);
+}
+.bm-btn .ico { width: 20px; height: 20px; }
+.bm-btn.open { background: #fff; color: #12a39c; }
+
+/* 배민플러스 묶음: 권역(아이콘+테두리) / 프로모션(왕관+그라데이션) / 가입신청 */
+.promo-btn, .zone-btn {
+  min-width: 88px; border-radius: 20px; display: flex; flex-direction: column; align-items: center;
+  padding: 8px 14px 9px;
+}
+.zone-btn .ico { width: 30px; height: 30px; margin-bottom: 2px; }
+.zone-btn.active .ico { color: #fff; }
+.promo-btn .crown-ico { width: 24px; height: 18px; margin-bottom: 2px; display: block; }
+.join-btn { height: 52px; gap: 10px; border-radius: 22px; font-size: 18px; background: linear-gradient(180deg, #ffe04a, #ffc916); }
+.join-btn .ico { width: 22px; height: 22px; }
+.join-btn .chev { width: 18px; height: 18px; margin-left: 6px; }
+
+/* 바텀시트: 머리(초록 원 아이콘 + 제목 + 닫기) */
+.sheet { border-radius: 26px 26px 0 0; padding: 10px 20px calc(20px + var(--safe-bottom)); }
+.sheet-head { display: flex; align-items: center; gap: 12px; margin: 2px 0 14px; }
+.sheet-head h2 { flex: 1; margin: 0; font-size: 22px; font-weight: 900; word-break: keep-all; }
+.sheet-logo {
+  width: 48px; height: 48px; border-radius: 50%; background: var(--brand-grad); color: #fff;
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.sheet-logo .ico { width: 28px; height: 28px; }
+.sheet-x {
+  width: 40px; height: 40px; border: 0; border-radius: 50%; background: #f1f3f2; color: #4a524e;
+  display: flex; align-items: center; justify-content: center; flex: none;
+}
+.addr-box, .pw-box .k { display: flex; align-items: center; gap: 6px; }
+.addr-box { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; background: #f3f5f4; color: #4a524e; font-size: 14px; }
+.addr-box .ico { width: 18px; height: 18px; color: #7d8681; }
+.pw-box { border-radius: 16px; }
+.pw-box .k .ico { width: 16px; height: 16px; }
+
+/* 등록·수정 폼 */
+.pretty .field { margin-bottom: 16px; }
+.pretty .lbl { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 800; color: #1d2420; margin-bottom: 8px; }
+.pretty .lbl small { font-weight: 600; color: var(--muted); font-size: 13px; }
+.pretty .lbl .ico { width: 20px; height: 20px; color: var(--brand); }
+.pretty .inp {
+  display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  border: 1.5px solid #dfe5e2; border-radius: 16px; background: #fff;
+}
+.pretty .inp:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(26, 165, 100, 0.12); }
+.pretty .inp.gray { background: #f3f5f4; border-color: #f3f5f4; }
+.pretty .inp .ico { width: 20px; height: 20px; color: #8a938e; }
+.pretty .inp input, .pretty .inp textarea { flex: 1; min-width: 0; border: 0; padding: 14px 0; background: transparent; outline: 0; }
+.pretty .inp.area { align-items: flex-start; }
+.pretty .inp.area .ico { margin-top: 14px; }
+.pretty .inp textarea { min-height: 84px; resize: vertical; }
+.star-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.star-pick { gap: 4px; }
+.star-pick button { padding: 0; color: #d9dedb; }
+.star-pick button .ico { width: 40px; height: 40px; }
+.star-pick button.on { color: #ffc400; filter: drop-shadow(0 2px 2px rgba(217, 154, 0, 0.3)); }
+.star-step { display: flex; border-radius: 999px; background: #f1f3f2; overflow: hidden; }
+.star-step button { width: 46px; height: 40px; border: 0; background: none; display: flex; align-items: center; justify-content: center; color: #4a524e; }
+.star-step .ico { width: 18px; height: 18px; }
+
+/* 시트 버튼: 알약 */
+.actions { gap: 12px; margin-top: 8px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 15px; border-radius: 999px; border: 1.5px solid #dfe5e2; font-size: 17px; font-weight: 800;
+}
+.btn .ico { width: 20px; height: 20px; }
+.btn.primary { background: var(--brand-grad); border-color: transparent; box-shadow: 0 6px 16px rgba(20, 148, 87, 0.3); }
